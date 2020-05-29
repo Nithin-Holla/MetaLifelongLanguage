@@ -42,7 +42,8 @@ def train(dataloader, model, optimizer, loss_fn, device, n_epochs=1):
 
             if iter % log_freq == 0:
                 acc, prec, rec, f1 = models.utils.calculate_metrics(pred.tolist(), labels.tolist())
-                logger.info('Epoch {}: Loss = {}, accuracy = {}, precision = {}, recall = {}, F1 score = {}'.format(epoch + 1, np.mean(all_losses), acc, prec, rec, f1))
+                logger.info('Epoch {:.4f}: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
+                            'F1 score = {:.4f}'.format(epoch + 1, np.mean(all_losses), acc, prec, rec, f1))
                 all_losses, all_predictions, all_labels = [], [], []
 
 
@@ -64,7 +65,8 @@ def evaluate(dataloader, model, loss_fn, device):
         all_labels.extend(labels.tolist())
 
     acc, prec, rec, f1 = models.utils.calculate_metrics(all_labels, all_predictions)
-    logger.info('Test metrics: Loss = {}, accuracy = {}, precision = {}, recall = {}, F1 score = {}'.format(np.mean(all_losses), acc, prec, rec, f1))
+    logger.info('Test metrics: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
+                'F1 score = {:.4f}'.format(np.mean(all_losses), acc, prec, rec, f1))
 
 
 if __name__ == '__main__':
@@ -77,16 +79,22 @@ if __name__ == '__main__':
 
     n_epochs = 1
 
+    logger.info('Loading the dataset')
     train_dataset = AGNewsDataset(train_path)
     test_dataset = AGNewsDataset(test_path)
     train_dataloader = data.DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=datasets.utils.batch_encode)
     test_dataloader = data.DataLoader(test_dataset, batch_size=32, shuffle=False, collate_fn=datasets.utils.batch_encode)
+    logger.info('Finished loading the dataset')
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = AlbertClsModel(n_classes=4, max_length=128, device=device)
+    logger.info('Initialized the model')
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam([p for p in model.parameters() if p.requires_grad], lr=3e-5)
 
+    logger.info('-------------Training starts here-------------')
     train(dataloader=train_dataloader, model=model, optimizer=optimizer, loss_fn=loss_fn, device=device, n_epochs=n_epochs)
+
+    logger.info('-------------Testing starts here-------------')
     evaluate(dataloader=test_dataloader, model=model, loss_fn=loss_fn, device=device)
