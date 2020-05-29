@@ -16,6 +16,57 @@ logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s
 logger = logging.getLogger('ContinualLearningLog')
 
 
+def train(dataloader, model, optimizer, loss_fn, device, n_epochs=1):
+    log_freq = 1000
+
+    model.train()
+
+    for epoch in range(n_epochs):
+        all_losses, all_predictions, all_labels = [], [], []
+        iter = 0
+
+        for text, labels in dataloader:
+            labels = torch.tensor(labels).to(device)
+            input_dict = model.encode_text(text)
+            output = model(input_dict)
+            loss = loss_fn(output, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            loss = loss.item()
+            pred = models.utils.make_prediction(output.detach())
+            all_losses.append(loss)
+            all_predictions.extend(pred.tolist())
+            all_labels.extend(labels.tolist())
+            iter += 1
+
+            if iter % log_freq == 0:
+                acc, prec, rec, f1 = models.utils.calculate_metrics(pred.tolist(), labels.tolist())
+                logger.info('Epoch {}: Loss = {}, accuracy = {}, precision = {}, recall = {}, F1 score = {}'.format(epoch + 1, np.mean(all_losses), acc, prec, rec, f1))
+                all_losses, all_predictions, all_labels = [], [], []
+
+
+def evaluate(dataloader, model, loss_fn, device):
+    all_losses, all_predictions, all_labels = [], [], []
+
+    model.eval()
+
+    for text, labels in dataloader:
+        labels = torch.tensor(labels).to(device)
+        input_dict = model.encode_text(text)
+        with torch.no_grad():
+            output = model(input_dict)
+            loss = loss_fn(output, labels)
+        loss = loss.item()
+        pred = models.utils.make_prediction(output.detach())
+        all_losses.append(loss)
+        all_predictions.extend(pred.tolist())
+        all_labels.extend(labels.tolist())
+
+    acc, prec, rec, f1 = models.utils.calculate_metrics(all_labels, all_predictions)
+    logger.info('Test metrics: Loss = {}, accuracy = {}, precision = {}, recall = {}, F1 score = {}'.format(np.mean(all_losses), acc, prec, rec, f1))
+
+
 if __name__ == '__main__':
 
     base_path = os.path.dirname(os.path.abspath(__file__))
@@ -23,6 +74,8 @@ if __name__ == '__main__':
     test_path = os.path.join(base_path, '../data/ag_news_csv/test.csv')
 
     torch.manual_seed(42)
+
+    n_epochs = 1
 
     train_dataset = AGNewsDataset(train_path)
     test_dataset = AGNewsDataset(test_path)
@@ -35,37 +88,5 @@ if __name__ == '__main__':
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam([p for p in model.parameters() if p.requires_grad], lr=3e-5)
 
-    n_iter = 100
-    iter = 0
-
-    for text, labels in train_dataloader:
-        labels = torch.tensor(labels).to(device)
-        input_dict = model.encode_text(text)
-        output = model(input_dict)
-        loss = loss_fn(output, labels)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        loss = loss.item()
-        pred = models.utils.make_prediction(output.detach())
-        acc, prec, rec, f1 = models.utils.calculate_metrics(pred.tolist(), labels.tolist())
-        logger.info('Iter {}: Loss = {}, acc = {}, prec = {}, rec = {}, f1 = {}'.format(iter + 1, loss, acc, prec, rec, f1))
-        iter += 1
-        if iter == n_iter:
-            break
-
-    all_losses, all_predictions, all_labels = [], [], []
-    for text, labels in test_dataloader:
-        labels = torch.tensor(labels).to(device)
-        input_dict = model.encode_text(text)
-        with torch.no_grad():
-            output = model(input_dict)
-            loss = loss_fn(output, labels)
-        loss = loss.item()
-        all_losses.append(loss)
-        pred = models.utils.make_prediction(output.detach())
-        all_predictions.extend(pred.tolist())
-        all_labels.extend(labels.tolist())
-
-    acc, prec, rec, f1 = models.utils.calculate_metrics(all_labels, all_predictions)
-    logger.info('Val: Loss = {}, acc = {}, prec = {}, rec = {}, f1 = {}'.format(np.mean(all_losses), acc, prec, rec, f1))
+    train(dataloader=train_dataloader, model=model, optimizer=optimizer, loss_fn=loss_fn, device=device, n_epochs=n_epochs)
+    evaluate(dataloader=test_dataloader, model=model, loss_fn=loss_fn, device=device)
