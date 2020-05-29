@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = AlbertClsModel(n_classes=4, max_length=128, device=device)
+    model = AlbertClsModel(n_classes=train_dataset.n_classes, max_length=128, device=device)
     logger.info('Initialized the model')
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam([p for p in model.parameters() if p.requires_grad], lr=3e-5)
