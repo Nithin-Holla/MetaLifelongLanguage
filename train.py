@@ -10,7 +10,8 @@ import torch.utils.data as data
 
 import models.utils
 import datasets.utils
-from datasets.text_classification_dataset import AGNewsDataset, DBPediaDataset
+from datasets.text_classification_dataset import AGNewsDataset, DBPediaDataset, AmazonDataset, YelpDataset, \
+    YahooAnswersDataset
 from models.base_models import AlbertClsModel
 
 
@@ -88,17 +89,28 @@ if __name__ == '__main__':
     if args.dataset == 1:
         train_path = os.path.join(base_path, '../data/ag_news_csv/train.csv')
         test_path = os.path.join(base_path, '../data/ag_news_csv/test.csv')
-        train_dataset = AGNewsDataset(train_path, reduce=True)
-        test_dataset = AGNewsDataset(test_path)
+        train_dataset = AGNewsDataset(train_path, 'train', reduce=True)
+        test_dataset = AGNewsDataset(test_path, 'test', reduce=True)
     elif args.dataset == 2:
-        raise NotImplementedError
+        train_path = os.path.join(base_path, '../data/amazon_review_full_csv/train.csv')
+        test_path = os.path.join(base_path, '../data/amazon_review_full_csv/test.csv')
+        train_dataset = AmazonDataset(train_path, 'train', reduce=True)
+        test_dataset = AmazonDataset(test_path, 'test', reduce=True)
     elif args.dataset == 3:
+        train_path = os.path.join(base_path, '../data/yelp_review_full_csv/train.csv')
+        test_path = os.path.join(base_path, '../data/yelp_review_full_csv/test.csv')
+        train_dataset = YelpDataset(train_path, 'train', reduce=True)
+        test_dataset = YelpDataset(test_path, 'test', reduce=True)
+    elif args.dataset == 4:
         train_path = os.path.join(base_path, '../data/dbpedia_csv/train.csv')
         test_path = os.path.join(base_path, '../data/dbpedia_csv/test.csv')
-        train_dataset = DBPediaDataset(train_path, reduce=True)
-        test_dataset = DBPediaDataset(test_path)
-    elif args.dataset == 4:
-        raise NotImplementedError
+        train_dataset = DBPediaDataset(train_path, 'train', reduce=True)
+        test_dataset = DBPediaDataset(test_path, 'test', reduce=True)
+    elif args.dataset == 5:
+        train_path = os.path.join(base_path, '../data/yahoo_answers_csv/train.csv')
+        test_path = os.path.join(base_path, '../data/yahoo_answers_csv/test.csv')
+        train_dataset = YahooAnswersDataset(train_path, 'train', reduce=True)
+        test_dataset = YahooAnswersDataset(test_path, 'test', reduce=True)
 
     train_dataloader = data.DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=datasets.utils.batch_encode)
     test_dataloader = data.DataLoader(test_dataset, batch_size=32, shuffle=False, collate_fn=datasets.utils.batch_encode)
