@@ -115,7 +115,7 @@ def evaluate(dataloader, model, loss_fn, device):
     logger.info('Test metrics: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
                 'F1 score = {:.4f}'.format(np.mean(all_losses), acc, prec, rec, f1))
 
-    return all_labels, all_predictions
+    return acc, prec, rec, f1
 
 
 if __name__ == '__main__':
@@ -168,15 +168,16 @@ if __name__ == '__main__':
               n_epochs=n_epochs)
 
     logger.info('-------------Testing starts here-------------')
-    labels_pool, predictions_pool = [], []
+    accuracies, precisions, recalls, f1s = [], [], [], []
     for test_dataset in test_datasets:
         logger.info('Testing on {}'.format(test_dataset.__class__.__name__))
         test_dataloader = data.DataLoader(test_dataset, batch_size=32, shuffle=False,
                                           collate_fn=datasets.utils.batch_encode)
-        labels, predictions = evaluate(dataloader=test_dataloader, model=model, loss_fn=loss_fn, device=device)
-        labels_pool.extend(labels)
-        predictions_pool.extend(predictions)
+        acc, prec, rec, f1 = evaluate(dataloader=test_dataloader, model=model, loss_fn=loss_fn, device=device)
+        accuracies.append(acc)
+        precisions.append(prec)
+        recalls.append(rec)
+        f1s.append(f1)
 
-    acc, prec, rec, f1 = models.utils.calculate_metrics(labels_pool, predictions_pool)
     logger.info('Overall test metrics: Accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
-                'F1 score = {:.4f}'.format(acc, prec, rec, f1))
+                'F1 score = {:.4f}'.format(np.mean(accuracies), np.mean(precisions), np.mean(recalls), np.mean(f1s)))
