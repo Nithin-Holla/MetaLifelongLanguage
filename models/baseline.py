@@ -8,7 +8,7 @@ from torch.utils import data
 
 import datasets
 import models.utils
-from models.base_models import AlbertClsModel, BertClsModel
+from models.base_models import TransformerClsModel
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('BaselineLog')
@@ -18,12 +18,10 @@ class Baseline:
 
     def __init__(self, device, n_classes, **kwargs):
         self.lr = kwargs.get('lr', 3e-5)
-        if 'albert' in kwargs.get('model'):
-            self.model = AlbertClsModel(n_classes=n_classes, max_length=128, device=device)
-        elif 'bert' in kwargs.get('model'):
-            self.model = BertClsModel(n_classes=n_classes, max_length=128, device=device)
-        else:
-            raise NotImplementedError
+        self.model = TransformerClsModel(model_name=kwargs.get('model'),
+                                         n_classes=n_classes,
+                                         max_length=128,
+                                         device=device)
         logger.info('Loaded {} as model'.format(self.model.__class__.__name__))
         self.loss_fn = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam([p for p in self.model.parameters() if p.requires_grad], lr=self.lr)
