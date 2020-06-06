@@ -64,6 +64,7 @@ class TransformerRLN(nn.Module):
 class LinearPLN(nn.Module):
 
     def __init__(self, in_dim, out_dim, device):
+        super(LinearPLN, self).__init__()
         self.linear = nn.Linear(in_dim, out_dim)
         self.linear.to(device)
 
