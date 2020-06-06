@@ -71,6 +71,3 @@ class LinearPLN(nn.Module):
     def forward(self, input):
         out = self.linear(input)
         return out
-
-
-

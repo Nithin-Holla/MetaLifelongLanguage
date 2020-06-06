@@ -58,7 +58,7 @@ class OML:
                 # Inner loop
                 for task_dataloader in train_dataloaders:
                     task_losses, task_predictions, task_labels = [], [], []
-                    for _ in updates_per_task:
+                    for _ in range(updates_per_task):
                         text, labels = next(task_dataloader)
                         labels = torch.tensor(labels).to(self.device)
                         input_dict = self.rln.encode_text(text)
