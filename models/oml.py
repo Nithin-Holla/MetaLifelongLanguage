@@ -20,8 +20,8 @@ logger = logging.getLogger('OML-Log')
 class OML:
 
     def __init__(self, device, n_classes, **kwargs):
-        self.inner_lr = kwargs.get('inner_lr', 0.01)
-        self.meta_lr = kwargs.get('meta_lr', 1e-4)
+        self.inner_lr = kwargs.get('inner_lr')
+        self.meta_lr = kwargs.get('meta_lr')
         self.device = device
 
         self.rln = TransformerRLN(model_name=kwargs.get('model'),
