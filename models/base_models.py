@@ -1,6 +1,5 @@
-from pytorch_pretrained_bert import BertTokenizer, BertModel
 from torch import nn
-from transformers import AlbertModel, AlbertTokenizer
+from transformers import AlbertModel, AlbertTokenizer, BertTokenizer, BertModel
 
 
 class TransformerClsModel(nn.Module):
