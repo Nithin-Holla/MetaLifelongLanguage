@@ -5,30 +5,30 @@ from torch import nn, optim
 import numpy as np
 
 from torch.utils import data
+from transformers import AdamW
 
 import datasets
 import models.utils
 from models.base_models import TransformerClsModel
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('BaselineLog')
+logger = logging.getLogger('Baseline-Log')
 
 
 class Baseline:
 
     def __init__(self, device, n_classes, **kwargs):
         self.lr = kwargs.get('lr', 3e-5)
+        self.device = device
         self.model = TransformerClsModel(model_name=kwargs.get('model'),
                                          n_classes=n_classes,
                                          max_length=128,
                                          device=device)
         logger.info('Loaded {} as model'.format(self.model.__class__.__name__))
         self.loss_fn = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam([p for p in self.model.parameters() if p.requires_grad], lr=self.lr)
-        self.device = device
+        self.optimizer = AdamW([p for p in self.model.parameters() if p.requires_grad], lr=self.lr)
 
-    def train(self, dataloader, n_epochs=1):
-        log_freq = 500
+    def train(self, dataloader, n_epochs, log_freq):
 
         self.model.train()
 
@@ -52,7 +52,7 @@ class Baseline:
                 iter += 1
 
                 if iter % log_freq == 0:
-                    acc, prec, rec, f1 = models.utils.calculate_metrics(pred.tolist(), labels.tolist())
+                    acc, prec, rec, f1 = models.utils.calculate_metrics(all_predictions, all_labels)
                     logger.info(
                         'Epoch {} metrics: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
                         'F1 score = {:.4f}'.format(epoch + 1, np.mean(all_losses), acc, prec, rec, f1))
@@ -75,18 +75,20 @@ class Baseline:
             all_predictions.extend(pred.tolist())
             all_labels.extend(labels.tolist())
 
-        acc, prec, rec, f1 = models.utils.calculate_metrics(all_labels, all_predictions)
+        acc, prec, rec, f1 = models.utils.calculate_metrics(all_predictions, all_labels)
         logger.info('Test metrics: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
                     'F1 score = {:.4f}'.format(np.mean(all_losses), acc, prec, rec, f1))
 
         return acc, prec, rec, f1
 
-    def training(self, train_datasets, n_epochs=1):
+    def training(self, train_datasets, **kwargs):
+        n_epochs = kwargs.get('n_epochs', 1)
+        log_freq = kwargs.get('log_freq', 500)
         for train_dataset in train_datasets:
             logger.info('Training on {}'.format(train_dataset.__class__.__name__))
             train_dataloader = data.DataLoader(train_dataset, batch_size=32, shuffle=True,
                                                collate_fn=datasets.utils.batch_encode)
-            self.train(dataloader=train_dataloader, n_epochs=n_epochs)
+            self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
 
     def testing(self, test_datasets):
         accuracies, precisions, recalls, f1s = [], [], [], []

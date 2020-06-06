@@ -9,6 +9,7 @@ import torch
 
 import datasets.utils
 from models.baseline import Baseline
+from models.oml import OML
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('ContinualLearningLog')
@@ -30,7 +31,10 @@ if __name__ == '__main__':
     parser.add_argument('--order', type=int, help='Order of datasets', required=True)
     parser.add_argument('--lr', type=float, help='Learning rate', default=3e-5)
     parser.add_argument('--model', type=str, help='Name of the model', default='bert')
-    parser.add_argument('--learner', type=str, help='Learner method', default='baseline')
+    parser.add_argument('--learner', type=str, help='Learner method', default='oml')
+    parser.add_argument('--n_episodes', type=int, help='Number of meta-training episodes', default=1000)
+    parser.add_argument('--batch_size', type=int, help='Batch size of tasks', default=8)
+    parser.add_argument('--updates_per_task', type=int, help='Number of inner-loop updates per task', default=5)
     args = parser.parse_args()
     logger.info('Using configuration: {}'.format(vars(args)))
 
@@ -58,13 +62,15 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if args.learner == 'baseline':
         learner = Baseline(device=device, n_classes=n_classes, **vars(args))
+    elif args.learner == 'oml':
+        learner = OML(device=device, n_classes=n_classes, **vars(args))
     else:
         raise NotImplementedError
     logger.info('Using {} as learner'.format(learner.__class__.__name__))
 
     # Training
     logger.info('----------Training starts here----------')
-    learner.training(train_datasets, n_epochs=1)
+    learner.training(train_datasets, **vars(args))
 
     # Testing
     logger.info('----------Testing starts here----------')
