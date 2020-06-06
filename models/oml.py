@@ -40,6 +40,31 @@ class OML:
         inner_params = [p for p in self.pln.parameters() if p.requires_grad]
         self.inner_optimizer = optim.SGD(inner_params, lr=self.inner_lr)
 
+    def evaluate(self, dataloader):
+        all_losses, all_predictions, all_labels = [], [], []
+
+        self.rln.eval()
+        self.pln.eval()
+
+        for text, labels in dataloader:
+            labels = torch.tensor(labels).to(self.device)
+            input_dict = self.model.encode_text(text)
+            with torch.no_grad():
+                repr = self.rln(input_dict)
+                output = self.pln(repr)
+                loss = self.loss_fn(output, labels)
+            loss = loss.item()
+            pred = models.utils.make_prediction(output.detach())
+            all_losses.append(loss)
+            all_predictions.extend(pred.tolist())
+            all_labels.extend(labels.tolist())
+
+        acc, prec, rec, f1 = models.utils.calculate_metrics(all_predictions, all_labels)
+        logger.info('Test metrics: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
+                    'F1 score = {:.4f}'.format(np.mean(all_losses), acc, prec, rec, f1))
+
+        return acc, prec, rec, f1
+
     def training(self, train_datasets, **kwargs):
         n_episodes = kwargs.get('n_episodes')
         batch_size = kwargs.get('batch_size')
@@ -78,7 +103,7 @@ class OML:
                 support_rec.append(rec)
                 support_f1.append(f1)
 
-                logger.info('Episode {} / {} support set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
+                logger.info('Episode {}/{} support set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
                             'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
                                                                         np.mean(support_loss), np.mean(support_acc),
                                                                         np.mean(support_prec), np.mean(support_rec),
@@ -102,7 +127,7 @@ class OML:
                     query_rec.append(rec)
                     query_f1.append(f1)
 
-                    logger.info('Episode {} / {} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
+                    logger.info('Episode {}/{} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
                                 'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
                                                                             np.mean(query_loss), np.mean(query_acc),
                                                                             np.mean(query_prec), np.mean(query_rec),
@@ -137,4 +162,17 @@ class OML:
                 self.meta_optimizer.zero_grad()
 
     def testing(self, test_datasets):
-        pass
+        accuracies, precisions, recalls, f1s = [], [], [], []
+        for test_dataset in test_datasets:
+            logger.info('Testing on {}'.format(test_dataset.__class__.__name__))
+            test_dataloader = data.DataLoader(test_dataset, batch_size=32, shuffle=False,
+                                              collate_fn=datasets.utils.batch_encode)
+            acc, prec, rec, f1 = self.evaluate(dataloader=test_dataloader)
+            accuracies.append(acc)
+            precisions.append(prec)
+            recalls.append(rec)
+            f1s.append(f1)
+
+        logger.info('Overall test metrics: Accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
+                    'F1 score = {:.4f}'.format(np.mean(accuracies), np.mean(precisions), np.mean(recalls),
+                                               np.mean(f1s)))
