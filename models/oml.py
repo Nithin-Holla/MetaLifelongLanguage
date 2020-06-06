@@ -48,7 +48,7 @@ class OML:
 
         for text, labels in dataloader:
             labels = torch.tensor(labels).to(self.device)
-            input_dict = self.model.encode_text(text)
+            input_dict = self.rln.encode_text(text)
             with torch.no_grad():
                 repr = self.rln(input_dict)
                 output = self.pln(repr)
