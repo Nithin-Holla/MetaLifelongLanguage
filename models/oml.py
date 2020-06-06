@@ -96,12 +96,12 @@ class OML:
                         task_predictions.extend(pred.tolist())
                         task_labels.extend(labels.tolist())
 
-                acc, prec, rec, f1 = models.utils.calculate_metrics(task_predictions, task_labels)
-                support_loss.append(np.mean(task_losses))
-                support_acc.append(acc)
-                support_prec.append(prec)
-                support_rec.append(rec)
-                support_f1.append(f1)
+                    acc, prec, rec, f1 = models.utils.calculate_metrics(task_predictions, task_labels)
+                    support_loss.append(np.mean(task_losses))
+                    support_acc.append(acc)
+                    support_prec.append(prec)
+                    support_rec.append(rec)
+                    support_f1.append(f1)
 
                 logger.info('Episode {}/{} support set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
                             'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
