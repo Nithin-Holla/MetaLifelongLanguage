@@ -96,7 +96,7 @@ class OML:
                     query_loss.append(loss.item())
                     pred = models.utils.make_prediction(output.detach())
 
-                    acc, prec, rec, f1 = models.utils.calculate_metrics(pred, labels)
+                    acc, prec, rec, f1 = models.utils.calculate_metrics(pred.tolist(), labels.tolist())
                     query_acc.append(acc)
                     query_prec.append(prec)
                     query_rec.append(rec)
