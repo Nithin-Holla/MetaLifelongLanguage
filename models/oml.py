@@ -68,9 +68,11 @@ class OML:
     def training(self, train_datasets, **kwargs):
         n_episodes = kwargs.get('n_episodes')
         batch_size = kwargs.get('batch_size')
-        updates_per_task = kwargs.get('updates_per_task')
-        train_dataloaders = [iter(data.DataLoader(dt, batch_size=32, shuffle=True,
-                                                  collate_fn=datasets.utils.batch_encode)) for dt in train_datasets]
+        updates = kwargs.get('updates')
+
+        concat_dataset = data.ConcatDataset(train_datasets)
+        train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=32, shuffle=True,
+                                                collate_fn=datasets.utils.batch_encode))
 
         for episode_id in range(n_episodes):
 
@@ -81,83 +83,74 @@ class OML:
                                       track_higher_grads=True) as (fpln, diffopt):
 
                 # Inner loop
-                for task_dataloader in train_dataloaders:
-                    task_losses, task_predictions, task_labels = [], [], []
-                    for _ in range(updates_per_task):
-                        text, labels = next(task_dataloader)
-                        labels = torch.tensor(labels).to(self.device)
-                        input_dict = self.rln.encode_text(text)
-                        repr = self.rln(input_dict)
-                        output = fpln(repr)
-                        loss = self.loss_fn(output, labels)
-                        diffopt.step(loss)
-                        pred = models.utils.make_prediction(output.detach())
-                        task_losses.append(loss.item())
-                        task_predictions.extend(pred.tolist())
-                        task_labels.extend(labels.tolist())
-
-                    acc, prec, rec, f1 = models.utils.calculate_metrics(task_predictions, task_labels)
-                    support_loss.append(np.mean(task_losses))
-                    support_acc.append(acc)
-                    support_prec.append(prec)
-                    support_rec.append(rec)
-                    support_f1.append(f1)
-
-                logger.info('Episode {}/{} support set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
-                            'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
-                                                                        np.mean(support_loss), np.mean(support_acc),
-                                                                        np.mean(support_prec), np.mean(support_rec),
-                                                                        np.mean(support_f1)))
-
-                # Outer loop
-                query_loss, query_acc, query_prec, query_rec, query_f1 = [], [], [], [], []
-                for task_dataloader in train_dataloaders:
-                    text, labels = next(task_dataloader)
+                task_predictions, task_labels = [], []
+                for _ in range(updates):
+                    text, labels = next(train_dataloader)
                     labels = torch.tensor(labels).to(self.device)
                     input_dict = self.rln.encode_text(text)
                     repr = self.rln(input_dict)
                     output = fpln(repr)
                     loss = self.loss_fn(output, labels)
-                    query_loss.append(loss.item())
+                    diffopt.step(loss)
                     pred = models.utils.make_prediction(output.detach())
+                    support_loss.append(loss.item())
+                    task_predictions.extend(pred.tolist())
+                    task_labels.extend(labels.tolist())
 
-                    acc, prec, rec, f1 = models.utils.calculate_metrics(pred.tolist(), labels.tolist())
-                    query_acc.append(acc)
-                    query_prec.append(prec)
-                    query_rec.append(rec)
-                    query_f1.append(f1)
+                acc, prec, rec, f1 = models.utils.calculate_metrics(task_predictions, task_labels)
 
-                    logger.info('Episode {}/{} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
-                                'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
-                                                                            np.mean(query_loss), np.mean(query_acc),
-                                                                            np.mean(query_prec), np.mean(query_rec),
-                                                                            np.mean(query_f1)))
+                logger.info('Episode {}/{} support set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
+                            'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
+                                                                        np.mean(support_loss), acc, prec, rec, f1))
 
-                    # RLN meta gradients
-                    rln_params = [p for p in self.rln.parameters() if p.requires_grad]
-                    meta_rln_grads = torch.autograd.grad(loss, rln_params, retain_graph=True)
-                    for param, meta_grad in zip(rln_params, meta_rln_grads):
-                        if param.grad is not None:
-                            param.grad += meta_grad.detach()
-                        else:
-                            param.grad = meta_grad.detach()
+                # Outer loop
+                query_loss, query_acc, query_prec, query_rec, query_f1 = [], [], [], [], []
+                text, labels = next(train_dataloader)
+                labels = torch.tensor(labels).to(self.device)
+                input_dict = self.rln.encode_text(text)
+                repr = self.rln(input_dict)
+                output = fpln(repr)
+                loss = self.loss_fn(output, labels)
+                query_loss.append(loss.item())
+                pred = models.utils.make_prediction(output.detach())
 
-                    # PLN meta gradients
-                    pln_params = [p for p in fpln.parameters(time=0) if p.requires_grad]
-                    meta_pln_grads = torch.autograd.grad(loss, pln_params)
-                    pln_params = [p for p in self.pln.parameters() if p.requires_grad]
-                    for param, meta_grad in zip(pln_params, meta_pln_grads):
-                        if param.grad is not None:
-                            param.grad += meta_grad.detach()
-                        else:
-                            param.grad = meta_grad.detach()
+                acc, prec, rec, f1 = models.utils.calculate_metrics(pred.tolist(), labels.tolist())
+                query_acc.append(acc)
+                query_prec.append(prec)
+                query_rec.append(rec)
+                query_f1.append(f1)
+
+                logger.info('Episode {}/{} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
+                            'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
+                                                                        np.mean(query_loss), np.mean(query_acc),
+                                                                        np.mean(query_prec), np.mean(query_rec),
+                                                                        np.mean(query_f1)))
+
+                # RLN meta gradients
+                rln_params = [p for p in self.rln.parameters() if p.requires_grad]
+                meta_rln_grads = torch.autograd.grad(loss, rln_params, retain_graph=True)
+                for param, meta_grad in zip(rln_params, meta_rln_grads):
+                    if param.grad is not None:
+                        param.grad += meta_grad.detach()
+                    else:
+                        param.grad = meta_grad.detach()
+
+                # PLN meta gradients
+                pln_params = [p for p in fpln.parameters(time=0) if p.requires_grad]
+                meta_pln_grads = torch.autograd.grad(loss, pln_params)
+                pln_params = [p for p in self.pln.parameters() if p.requires_grad]
+                for param, meta_grad in zip(pln_params, meta_pln_grads):
+                    if param.grad is not None:
+                        param.grad += meta_grad.detach()
+                    else:
+                        param.grad = meta_grad.detach()
 
             # Meta optimizer step
             if (episode_id + 1) % batch_size == 0:
                 rln_params = [p for p in self.rln.parameters() if p.requires_grad]
                 pln_params = [p for p in self.pln.parameters() if p.requires_grad]
                 for param in rln_params + pln_params:
-                    param.grad /= batch_size * len(train_dataloaders)
+                    param.grad /= batch_size
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()
 

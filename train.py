@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--learner', type=str, help='Learner method', default='oml')
     parser.add_argument('--n_episodes', type=int, help='Number of meta-training episodes', default=1000)
     parser.add_argument('--batch_size', type=int, help='Batch size of tasks', default=8)
-    parser.add_argument('--updates_per_task', type=int, help='Number of inner-loop updates per task', default=5)
+    parser.add_argument('--updates', type=int, help='Number of inner-loop updates', default=5)
     args = parser.parse_args()
     logger.info('Using configuration: {}'.format(vars(args)))
 
