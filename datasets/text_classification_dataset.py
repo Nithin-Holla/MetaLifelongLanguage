@@ -1,9 +1,34 @@
+import re
+
 import pandas as pd
 
 from torch.utils import data
 
 MAX_TRAIN_SIZE = 115000
 MAX_TEST_SIZE = 7600
+
+
+def preprocess(text):
+    """
+    Preprocesses the text
+    """
+    text = text.lower()
+    # removes '\n' present explicitly
+    text = re.sub(r"(\\n)+", " ", text)
+    # removes '\\'
+    text = re.sub(r"(\\\\)+", "", text)
+    # removes unnecessary space
+    text = re.sub(r"(\s){2,}", u" ", text)
+    # replaces repeated punctuation marks with single punctuation followed by a space
+    # e.g, what???? -> what?
+    text = re.sub(r"([.?!]){2,}", r"\1", text)
+    # appends space to $ which will help during tokenization
+    text = text.replace(u"$", u"$ ")
+    # # replace decimal of the type x.y with x since decimal digits after '.' do not affect, e.g, 1.25 -> 1
+    # text = re.sub(r"(\d+)\.(\d+)", r"\1", text)
+    # removes hyperlinks
+    text = re.sub(r"https?:\/\/\S+\b|www\.(\w+\.)+\S*", "", text)
+    return str(text)
 
 
 class AGNewsDataset(data.Dataset):
@@ -15,6 +40,7 @@ class AGNewsDataset(data.Dataset):
         self.data['text'] = self.data['title'] + self.data['description']
         self.data['labels'] = self.data['labels'] - 1
         self.data.drop(columns=['title', 'description'], inplace=True)
+        self.data['text'] = self.data['text'].apply(preprocess)
         self.n_classes = 4
         if reduce:
             if split == 'train':
@@ -40,6 +66,7 @@ class DBPediaDataset(data.Dataset):
         self.data['text'] = self.data['title'] + self.data['description']
         self.data['labels'] = self.data['labels'] - 1
         self.data.drop(columns=['title', 'description'], inplace=True)
+        self.data['text'] = self.data['text'].apply(preprocess)
         self.n_classes = 14
         if reduce:
             if split == 'train':
@@ -65,6 +92,7 @@ class AmazonDataset(data.Dataset):
         self.data['text'] = self.data['title'] + self.data['description']
         self.data['labels'] = self.data['labels'] - 1
         self.data.drop(columns=['title', 'description'], inplace=True)
+        self.data['text'] = self.data['text'].apply(preprocess)
         self.n_classes = 5
         if reduce:
             if split == 'train':
@@ -88,6 +116,7 @@ class YelpDataset(data.Dataset):
                                 index_col=False)
         self.data.dropna(inplace=True)
         self.data['labels'] = self.data['labels'] - 1
+        self.data['text'] = self.data['text'].apply(preprocess)
         self.n_classes = 5
         if reduce:
             if split == 'train':
@@ -114,6 +143,7 @@ class YahooAnswersDataset(data.Dataset):
         self.data['text'] = self.data['question_title'] + self.data['question_content'] + self.data['best_answer']
         self.data['labels'] = self.data['labels'] - 1
         self.data.drop(columns=['question_title', 'question_content', 'best_answer'], inplace=True)
+        self.data['text'] = self.data['text'].apply(preprocess)
         self.n_classes = 10
         if reduce:
             if split == 'train':
