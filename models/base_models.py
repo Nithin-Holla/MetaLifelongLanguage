@@ -1,3 +1,6 @@
+import random
+import torch
+
 from torch import nn
 from transformers import AlbertModel, AlbertTokenizer, BertTokenizer, BertModel
 
@@ -71,3 +74,33 @@ class LinearPLN(nn.Module):
     def forward(self, input):
         out = self.linear(input)
         return out
+
+
+class ReplayMemory:
+
+    def __init__(self, write_prob):
+        self.buffer = []
+        self.write_prob = write_prob
+
+    def write(self, text, label):
+        input_tuple = (text, label)
+        if random.random() < self.write_prob:
+            self.buffer.append(input_tuple)
+
+    def read(self):
+        text, label = random.choice(self.buffer)
+        return text, label
+
+    def write_batch(self, text, labels):
+        if isinstance(labels, torch.Tensor):
+            labels = labels.tolist()
+        for txt, lbl in zip(text, labels):
+            self.write(txt, lbl)
+
+    def read_batch(self, batch_size):
+        text, label = [], []
+        for _ in range(batch_size):
+            txt, lbl = self.read()
+            text.append(txt)
+            label.append(lbl)
+        return text, label
