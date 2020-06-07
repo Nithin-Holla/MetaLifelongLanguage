@@ -87,7 +87,11 @@ class OML:
                 # Inner loop
                 task_predictions, task_labels = [], []
                 for _ in range(updates):
-                    text, labels = next(train_dataloader)
+                    try:
+                        text, labels = next(train_dataloader)
+                    except StopIteration:
+                        logger.info('Terminating training as all the data is seen')
+                        return
                     labels = torch.tensor(labels).to(self.device)
                     input_dict = self.rln.encode_text(text)
                     repr = self.rln(input_dict)
@@ -109,7 +113,11 @@ class OML:
                 # Outer loop
                 query_loss, query_acc, query_prec, query_rec, query_f1 = [], [], [], [], []
                 query_set = []
-                text, labels = next(train_dataloader)
+                try:
+                    text, labels = next(train_dataloader)
+                except StopIteration:
+                    logger.info('Terminating training as all the data is seen')
+                    return
                 query_set.append((text, labels))
                 text, labels = self.memory.read_batch(batch_size=32)
                 query_set.append((text, labels))
