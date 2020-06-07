@@ -73,7 +73,7 @@ class OML:
         updates = kwargs.get('updates')
 
         concat_dataset = data.ConcatDataset(train_datasets)
-        train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=32, shuffle=True,
+        train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=32, shuffle=False,
                                                 collate_fn=datasets.utils.batch_encode))
 
         for episode_id in range(n_episodes):
@@ -137,12 +137,6 @@ class OML:
                     query_rec.append(rec)
                     query_f1.append(f1)
 
-                    logger.info('Episode {}/{} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
-                                'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
-                                                                            np.mean(query_loss), np.mean(query_acc),
-                                                                            np.mean(query_prec), np.mean(query_rec),
-                                                                            np.mean(query_f1)))
-
                     # RLN meta gradients
                     rln_params = [p for p in self.rln.parameters() if p.requires_grad]
                     meta_rln_grads = torch.autograd.grad(loss, rln_params, retain_graph=True)
@@ -167,9 +161,15 @@ class OML:
                     rln_params = [p for p in self.rln.parameters() if p.requires_grad]
                     pln_params = [p for p in self.pln.parameters() if p.requires_grad]
                     for param in rln_params + pln_params:
-                        param.grad /= (batch_size * 2)
+                        param.grad /= (batch_size * len(query_set))
                     self.meta_optimizer.step()
                     self.meta_optimizer.zero_grad()
+
+                logger.info('Episode {}/{} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
+                            'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
+                                                                        np.mean(query_loss), np.mean(query_acc),
+                                                                        np.mean(query_prec), np.mean(query_rec),
+                                                                        np.mean(query_f1)))
 
     def testing(self, test_datasets):
         accuracies, precisions, recalls, f1s = [], [], [], []
