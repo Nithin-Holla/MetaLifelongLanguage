@@ -125,7 +125,7 @@ class OML:
             support_loss, support_acc, support_prec, support_rec, support_f1 = [], [], [], [], []
             with higher.innerloop_ctx(self.pln, self.inner_optimizer,
                                       copy_initial_weights=False,
-                                      track_higher_grads=True) as (fpln, diffopt):
+                                      track_higher_grads=False) as (fpln, diffopt):
 
                 # Inner loop
                 support_set = defaultdict(list)
