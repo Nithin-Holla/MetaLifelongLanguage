@@ -77,4 +77,4 @@ if __name__ == '__main__':
 
     # Testing
     logger.info('----------Testing starts here----------')
-    learner.testing(test_datasets)
+    learner.testing(test_datasets, **vars(args))

@@ -90,7 +90,7 @@ class Baseline:
                                                collate_fn=datasets.utils.batch_encode)
             self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
 
-    def testing(self, test_datasets):
+    def testing(self, test_datasets, **kwargs):
         accuracies, precisions, recalls, f1s = [], [], [], []
         for test_dataset in test_datasets:
             logger.info('Testing on {}'.format(test_dataset.__class__.__name__))

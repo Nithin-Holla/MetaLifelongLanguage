@@ -42,24 +42,54 @@ class OML:
         inner_params = [p for p in self.pln.parameters() if p.requires_grad]
         self.inner_optimizer = optim.SGD(inner_params, lr=self.inner_lr)
 
-    def evaluate(self, dataloader):
-        all_losses, all_predictions, all_labels = [], [], []
+    def evaluate(self, dataloader, updates):
 
         self.rln.eval()
-        self.pln.eval()
+        self.pln.train()
 
-        for text, labels in dataloader:
-            labels = torch.tensor(labels).to(self.device)
-            input_dict = self.rln.encode_text(text)
-            with torch.no_grad():
+        support_set = []
+        for _ in range(updates):
+            text, labels = self.memory.read_batch(batch_size=32)
+            support_set.append((text, labels))
+
+        with higher.innerloop_ctx(self.pln, self.inner_optimizer,
+                                  copy_initial_weights=False,
+                                  track_higher_grads=False) as (fpln, diffopt):
+
+            # Inner loop
+            task_predictions, task_labels = [], []
+            support_loss = []
+            for text, labels in support_set:
+                labels = torch.tensor(labels).to(self.device)
+                input_dict = self.rln.encode_text(text)
                 repr = self.rln(input_dict)
-                output = self.pln(repr)
+                output = fpln(repr)
                 loss = self.loss_fn(output, labels)
-            loss = loss.item()
-            pred = models.utils.make_prediction(output.detach())
-            all_losses.append(loss)
-            all_predictions.extend(pred.tolist())
-            all_labels.extend(labels.tolist())
+                diffopt.step(loss)
+                pred = models.utils.make_prediction(output.detach())
+                support_loss.append(loss.item())
+                task_predictions.extend(pred.tolist())
+                task_labels.extend(labels.tolist())
+
+            acc, prec, rec, f1 = models.utils.calculate_metrics(task_predictions, task_labels)
+
+            logger.info('Support set metrics: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
+                        'recall = {:.4f}, F1 score = {:.4f}'.format(np.mean(support_loss), acc, prec, rec, f1))
+
+            all_losses, all_predictions, all_labels = [], [], []
+
+            for text, labels in dataloader:
+                labels = torch.tensor(labels).to(self.device)
+                input_dict = self.rln.encode_text(text)
+                with torch.no_grad():
+                    repr = self.rln(input_dict)
+                    output = fpln(repr)
+                    loss = self.loss_fn(output, labels)
+                loss = loss.item()
+                pred = models.utils.make_prediction(output.detach())
+                all_losses.append(loss)
+                all_predictions.extend(pred.tolist())
+                all_labels.extend(labels.tolist())
 
         acc, prec, rec, f1 = models.utils.calculate_metrics(all_predictions, all_labels)
         logger.info('Test metrics: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
@@ -171,13 +201,14 @@ class OML:
                                                                         np.mean(query_prec), np.mean(query_rec),
                                                                         np.mean(query_f1)))
 
-    def testing(self, test_datasets):
+    def testing(self, test_datasets, **kwargs):
+        updates = kwargs.get('updates')
         accuracies, precisions, recalls, f1s = [], [], [], []
         for test_dataset in test_datasets:
             logger.info('Testing on {}'.format(test_dataset.__class__.__name__))
             test_dataloader = data.DataLoader(test_dataset, batch_size=32, shuffle=False,
                                               collate_fn=datasets.utils.batch_encode)
-            acc, prec, rec, f1 = self.evaluate(dataloader=test_dataloader)
+            acc, prec, rec, f1 = self.evaluate(dataloader=test_dataloader, updates=updates)
             accuracies.append(acc)
             precisions.append(prec)
             recalls.append(rec)
