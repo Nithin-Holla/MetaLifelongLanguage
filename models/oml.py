@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 import higher
 import torch
@@ -42,15 +43,27 @@ class OML:
         inner_params = [p for p in self.pln.parameters() if p.requires_grad]
         self.inner_optimizer = optim.SGD(inner_params, lr=self.inner_lr)
 
+    def group_by_class(self, data_set):
+        grouped_text = defaultdict(list)
+        grouped_data_set = []
+        for txt, lbl in zip(data_set['text'], data_set['label']):
+            grouped_text[lbl].append(txt)
+        for lbl in grouped_text.keys():
+            grouped_data_set.append((grouped_text[lbl], [lbl] * len(grouped_text[lbl])))
+        return grouped_data_set
+
     def evaluate(self, dataloader, updates):
 
         self.rln.eval()
         self.pln.train()
 
-        support_set = []
+        support_set = defaultdict(list)
         for _ in range(updates):
             text, labels = self.memory.read_batch(batch_size=32)
-            support_set.append((text, labels))
+            support_set['text'].extend(text)
+            support_set['label'].extend(labels)
+
+        support_set = self.group_by_class(support_set)
 
         with higher.innerloop_ctx(self.pln, self.inner_optimizer,
                                   copy_initial_weights=False,
@@ -115,13 +128,20 @@ class OML:
                                       track_higher_grads=True) as (fpln, diffopt):
 
                 # Inner loop
+                support_set = defaultdict(list)
                 task_predictions, task_labels = [], []
                 for _ in range(updates):
                     try:
                         text, labels = next(train_dataloader)
+                        support_set['text'].extend(text)
+                        support_set['label'].extend(labels)
                     except StopIteration:
                         logger.info('Terminating training as all the data is seen')
                         return
+
+                support_set = self.group_by_class(support_set)
+
+                for text, labels in support_set:
                     labels = torch.tensor(labels).to(self.device)
                     input_dict = self.rln.encode_text(text)
                     repr = self.rln(input_dict)
@@ -145,12 +165,13 @@ class OML:
                 query_set = []
                 try:
                     text, labels = next(train_dataloader)
+                    query_set.append((text, labels))
                 except StopIteration:
                     logger.info('Terminating training as all the data is seen')
                     return
-                query_set.append((text, labels))
-                text, labels = self.memory.read_batch(batch_size=32)
-                query_set.append((text, labels))
+
+                # text, labels = self.memory.read_batch(batch_size=32)
+                # query_set.append((text, labels))
 
                 for text, labels in query_set:
                     labels = torch.tensor(labels).to(self.device)
