@@ -1,6 +1,6 @@
 import logging
 import torch
-from torch import nn, optim
+from torch import nn
 
 import numpy as np
 
@@ -84,17 +84,19 @@ class Baseline:
     def training(self, train_datasets, **kwargs):
         n_epochs = kwargs.get('n_epochs', 1)
         log_freq = kwargs.get('log_freq', 500)
+        mini_batch_size = kwargs.get('mini_batch_size')
         for train_dataset in train_datasets:
             logger.info('Training on {}'.format(train_dataset.__class__.__name__))
-            train_dataloader = data.DataLoader(train_dataset, batch_size=32, shuffle=True,
+            train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=True,
                                                collate_fn=datasets.utils.batch_encode)
             self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
 
     def testing(self, test_datasets, **kwargs):
+        mini_batch_size = kwargs.get('mini_batch_size')
         accuracies, precisions, recalls, f1s = [], [], [], []
         for test_dataset in test_datasets:
             logger.info('Testing on {}'.format(test_dataset.__class__.__name__))
-            test_dataloader = data.DataLoader(test_dataset, batch_size=32, shuffle=False,
+            test_dataloader = data.DataLoader(test_dataset, batch_size=mini_batch_size, shuffle=False,
                                               collate_fn=datasets.utils.batch_encode)
             acc, prec, rec, f1 = self.evaluate(dataloader=test_dataloader)
             accuracies.append(acc)
