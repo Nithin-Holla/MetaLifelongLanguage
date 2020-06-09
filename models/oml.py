@@ -117,6 +117,8 @@ class OML:
         updates = kwargs.get('updates')
         mini_batch_size = kwargs.get('mini_batch_size')
 
+        replay_freq = int(1 / ((updates + 1) * self.replay_rate))
+
         concat_dataset = data.ConcatDataset(train_datasets)
         train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=mini_batch_size, shuffle=False,
                                                 collate_fn=datasets.utils.batch_encode))
@@ -173,7 +175,7 @@ class OML:
                     logger.info('Terminating training as all the data is seen')
                     return
 
-                if (episode_id + 1) % 16 == 0:
+                if (episode_id + 1) % replay_freq == 0:
                     text, labels = self.memory.read_batch(batch_size=mini_batch_size)
                     query_set.append((text, labels))
 
