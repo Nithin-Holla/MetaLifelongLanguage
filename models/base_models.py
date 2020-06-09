@@ -104,3 +104,6 @@ class ReplayMemory:
             text.append(txt)
             label.append(lbl)
         return text, label
+
+    def len(self):
+        return len(self.buffer)

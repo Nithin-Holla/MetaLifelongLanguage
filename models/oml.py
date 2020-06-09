@@ -1,4 +1,5 @@
 import logging
+import random
 from collections import defaultdict
 
 import higher
@@ -24,6 +25,7 @@ class OML:
         self.inner_lr = kwargs.get('inner_lr')
         self.meta_lr = kwargs.get('meta_lr')
         self.write_prob = kwargs.get('write_prob')
+        self.replay_rate = 0.01
         self.device = device
 
         self.rln = TransformerRLN(model_name=kwargs.get('model'),
@@ -123,6 +125,13 @@ class OML:
 
             self.inner_optimizer.zero_grad()
             support_loss, support_acc, support_prec, support_rec, support_f1 = [], [], [], [], []
+
+            if random.random() < self.replay_rate and self.memory.len() > 32 * (updates + 1):
+                do_replay = True
+                logger.info('Replay episode')
+            else:
+                do_replay = False
+
             with higher.innerloop_ctx(self.pln, self.inner_optimizer,
                                       copy_initial_weights=False,
                                       track_higher_grads=False) as (fpln, diffopt):
@@ -132,7 +141,10 @@ class OML:
                 task_predictions, task_labels = [], []
                 for _ in range(updates):
                     try:
-                        text, labels = next(train_dataloader)
+                        if do_replay:
+                            text, labels = self.memory.read_batch(batch_size=32)
+                        else:
+                            text, labels = next(train_dataloader)
                         support_set['text'].extend(text)
                         support_set['label'].extend(labels)
                     except StopIteration:
@@ -164,7 +176,10 @@ class OML:
                 query_loss, query_acc, query_prec, query_rec, query_f1 = [], [], [], [], []
                 query_set = []
                 try:
-                    text, labels = next(train_dataloader)
+                    if do_replay:
+                        text, labels = self.memory.read_batch(batch_size=32)
+                    else:
+                        text, labels = next(train_dataloader)
                     query_set.append((text, labels))
                 except StopIteration:
                     logger.info('Terminating training as all the data is seen')
