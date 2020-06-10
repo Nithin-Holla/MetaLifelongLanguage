@@ -1,4 +1,5 @@
 import logging
+import math
 from collections import defaultdict
 
 import higher
@@ -117,7 +118,7 @@ class OML:
         updates = kwargs.get('updates')
         mini_batch_size = kwargs.get('mini_batch_size')
 
-        replay_freq = max(1, int(1 / ((updates + 1) * self.replay_rate)))
+        replay_freq = int(max(1, math.ceil(1 / ((updates + 1) * self.replay_rate))))
 
         concat_dataset = data.ConcatDataset(train_datasets)
         train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=mini_batch_size, shuffle=False,
