@@ -17,9 +17,10 @@ logger = logging.getLogger('Baseline-Log')
 
 class Baseline:
 
-    def __init__(self, device, n_classes, **kwargs):
+    def __init__(self, device, n_classes, training_mode, **kwargs):
         self.lr = kwargs.get('lr', 3e-5)
         self.device = device
+        self.training_mode = training_mode
         self.model = TransformerClsModel(model_name=kwargs.get('model'),
                                          n_classes=n_classes,
                                          max_length=128,
@@ -85,11 +86,20 @@ class Baseline:
         n_epochs = kwargs.get('n_epochs', 1)
         log_freq = kwargs.get('log_freq', 500)
         mini_batch_size = kwargs.get('mini_batch_size')
-        for train_dataset in train_datasets:
-            logger.info('Training on {}'.format(train_dataset.__class__.__name__))
+        if self.training_mode == 'sequential':
+            for train_dataset in train_datasets:
+                logger.info('Training on {}'.format(train_dataset.__class__.__name__))
+                train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=True,
+                                                   collate_fn=datasets.utils.batch_encode)
+                self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
+        elif self.training_mode == 'multi_task':
+            train_dataset = data.ConcatDataset(train_datasets)
+            logger.info('Training multi-task model on all datasets')
             train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=True,
                                                collate_fn=datasets.utils.batch_encode)
             self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
+        else:
+            raise ValueError('Invalid training mode')
 
     def testing(self, test_datasets, **kwargs):
         mini_batch_size = kwargs.get('mini_batch_size')
