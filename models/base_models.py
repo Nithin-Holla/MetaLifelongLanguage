@@ -35,6 +35,14 @@ class TransformerClsModel(nn.Module):
         out = self.linear(out)
         return out
 
+    def forward_transformer(self, inputs):
+        _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
+        return out
+
+    def forward_linear(self, input):
+        out = self.linear(input)
+        return out
+
 
 class TransformerRLN(nn.Module):
 
