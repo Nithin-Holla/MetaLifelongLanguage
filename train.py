@@ -8,6 +8,7 @@ import numpy as np
 import torch
 
 import datasets.utils
+from models.anml import ANML
 from models.baseline import Baseline
 from models.oml import OML
 
@@ -68,6 +69,8 @@ if __name__ == '__main__':
         learner = Baseline(device=device, n_classes=n_classes, **vars(args))
     elif args.learner == 'oml':
         learner = OML(device=device, n_classes=n_classes, **vars(args))
+    elif args.learner == 'anml':
+        learner = ANML(device=device, n_classes=n_classes, **vars(args))
     else:
         raise NotImplementedError
     logger.info('Using {} as learner'.format(learner.__class__.__name__))
