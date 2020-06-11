@@ -30,17 +30,16 @@ class TransformerClsModel(nn.Module):
             encode_result[key] = encode_result[key].to(self.device)
         return encode_result
 
-    def forward(self, inputs):
-        _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
-        out = self.linear(out)
-        return out
-
-    def forward_transformer(self, inputs):
-        _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
-        return out
-
-    def forward_linear(self, input):
-        out = self.linear(input)
+    def forward(self, inputs, out_from='full'):
+        if out_from == 'full':
+            _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
+            out = self.linear(out)
+        elif out_from == 'transformers':
+            _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
+        elif out_from == 'linear':
+            out = self.linear(inputs)
+        else:
+            raise ValueError('Invalid value of argument')
         return out
 
 
