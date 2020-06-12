@@ -29,6 +29,14 @@ class Baseline:
         self.loss_fn = nn.CrossEntropyLoss()
         self.optimizer = AdamW([p for p in self.model.parameters() if p.requires_grad], lr=self.lr)
 
+    def save_model(self, model_path):
+        checkpoint = self.model.state_dict()
+        torch.save(checkpoint, model_path)
+
+    def load_model(self, model_path):
+        checkpoint = torch.load(model_path)
+        self.model.load_state_dict(checkpoint)
+
     def train(self, dataloader, n_epochs, log_freq):
 
         self.model.train()

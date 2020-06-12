@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import random
@@ -79,8 +80,11 @@ if __name__ == '__main__':
     logger.info('Using {} as learner'.format(learner.__class__.__name__))
 
     # Training
+    model_file_name = learner.__class__.__name__ + '-' + str(datetime.now()).replace(':', '-').replace(' ', '_') + '.pt'
     logger.info('----------Training starts here----------')
     learner.training(train_datasets, **vars(args))
+    learner.save_model(os.path.join(base_path, model_file_name))
+    logger.info("Saved the model with name {}".format(model_file_name))
 
     # Testing
     logger.info('----------Testing starts here----------')

@@ -54,6 +54,16 @@ class OML:
             grouped_data_set.append((grouped_text[lbl], [lbl] * len(grouped_text[lbl])))
         return grouped_data_set
 
+    def save_model(self, model_path):
+        checkpoint = {'rln': self.rln.state_dict(),
+                      'pln': self.pln.state_dict()}
+        torch.save(checkpoint, model_path)
+
+    def load_model(self, model_path):
+        checkpoint = torch.load(model_path)
+        self.rln.load_state_dict(checkpoint['rln'])
+        self.pln.load_state_dict(checkpoint['pln'])
+
     def evaluate(self, dataloader, updates, mini_batch_size):
 
         self.rln.eval()
