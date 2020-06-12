@@ -1,8 +1,8 @@
-import datetime
 import logging
 import os
 import random
 from argparse import ArgumentParser
+from datetime import datetime
 
 import numpy as np
 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     logger.info('----------Training starts here----------')
     learner.training(train_datasets, **vars(args))
     learner.save_model(os.path.join(base_path, model_file_name))
-    logger.info("Saved the model with name {}".format(model_file_name))
+    logger.info('Saved the model with name {}'.format(model_file_name))
 
     # Testing
     logger.info('----------Testing starts here----------')
