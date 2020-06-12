@@ -80,9 +80,7 @@ class ANML:
 
         support_set = self.group_by_class(support_set)
 
-        output_layer_optimizer = optim.SGD([p for p in self.pn.linear.parameters() if p.requires_grad], lr=self.inner_lr)
-
-        with higher.innerloop_ctx(self.pn, output_layer_optimizer,
+        with higher.innerloop_ctx(self.pn, self.inner_optimizer,
                                   copy_initial_weights=False,
                                   track_higher_grads=False) as (fpn, diffopt):
 
