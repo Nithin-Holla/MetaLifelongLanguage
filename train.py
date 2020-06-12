@@ -42,6 +42,7 @@ if __name__ == '__main__':
     parser.add_argument('--mini_batch_size', type=int, help='Batch size of data points within an episode', default=32)
     parser.add_argument('--updates', type=int, help='Number of inner-loop updates', default=5)
     parser.add_argument('--write_prob', type=float, help='Write probability for buffer memory', default=0.5)
+    parser.add_argument('--max_length', type=int, help='Maximum sequence length for the input', default=128)
     args = parser.parse_args()
     logger.info('Using configuration: {}'.format(vars(args)))
 

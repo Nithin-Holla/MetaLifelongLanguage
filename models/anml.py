@@ -29,11 +29,11 @@ class ANML:
         self.device = device
 
         self.nm = TransformerRLN(model_name=kwargs.get('model'),
-                                 max_length=128,
+                                 max_length=kwargs.get('max_length'),
                                  device=device)
         self.pn = TransformerClsModel(model_name=kwargs.get('model'),
                                       n_classes=n_classes,
-                                      max_length=128,
+                                      max_length=kwargs.get('max_length'),
                                       device=device)
         self.memory = ReplayMemory(self.write_prob)
         self.loss_fn = nn.CrossEntropyLoss()

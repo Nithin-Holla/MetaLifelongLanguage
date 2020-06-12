@@ -23,7 +23,7 @@ class Baseline:
         self.training_mode = training_mode
         self.model = TransformerClsModel(model_name=kwargs.get('model'),
                                          n_classes=n_classes,
-                                         max_length=128,
+                                         max_length=kwargs.get('max_length'),
                                          device=device)
         logger.info('Loaded {} as model'.format(self.model.__class__.__name__))
         self.loss_fn = nn.CrossEntropyLoss()

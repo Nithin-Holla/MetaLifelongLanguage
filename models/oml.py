@@ -29,7 +29,7 @@ class OML:
         self.device = device
 
         self.rln = TransformerRLN(model_name=kwargs.get('model'),
-                                  max_length=128,
+                                  max_length=kwargs.get('max_length'),
                                   device=device)
         self.pln = LinearPLN(in_dim=768, out_dim=n_classes, device=device)
         self.memory = ReplayMemory(self.write_prob)
