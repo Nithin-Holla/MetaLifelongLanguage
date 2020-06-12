@@ -81,9 +81,11 @@ if __name__ == '__main__':
 
     # Training
     model_file_name = learner.__class__.__name__ + '-' + str(datetime.now()).replace(':', '-').replace(' ', '_') + '.pt'
+    model_dir = os.path.join(base_path, 'saved_models')
+    os.makedirs(model_dir, exist_ok=True)
     logger.info('----------Training starts here----------')
     learner.training(train_datasets, **vars(args))
-    learner.save_model(os.path.join(base_path, model_file_name))
+    learner.save_model(os.path.join(model_dir, model_file_name))
     logger.info('Saved the model with name {}'.format(model_file_name))
 
     # Testing
