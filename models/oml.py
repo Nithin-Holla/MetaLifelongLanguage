@@ -25,7 +25,7 @@ class OML:
         self.inner_lr = kwargs.get('inner_lr')
         self.meta_lr = kwargs.get('meta_lr')
         self.write_prob = kwargs.get('write_prob')
-        self.replay_rate = 0.01
+        self.replay_rate = kwargs.get('replay_rate')
         self.device = device
 
         self.rln = TransformerRLN(model_name=kwargs.get('model'),
