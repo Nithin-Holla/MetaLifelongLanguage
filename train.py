@@ -43,6 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--updates', type=int, help='Number of inner-loop updates', default=5)
     parser.add_argument('--write_prob', type=float, help='Write probability for buffer memory', default=0.5)
     parser.add_argument('--max_length', type=int, help='Maximum sequence length for the input', default=128)
+    parser.add_argument('--seed', type=int, help='Random seed', default=42)
     args = parser.parse_args()
     logger.info('Using configuration: {}'.format(vars(args)))
 
@@ -50,9 +51,9 @@ if __name__ == '__main__':
     base_path = os.path.dirname(os.path.abspath(__file__))
 
     # Set random seed
-    torch.manual_seed(42)
-    random.seed(42)
-    np.random.seed(42)
+    torch.manual_seed(args.seed)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
 
     # Load the datasets
     logger.info('Loading the datasets')
