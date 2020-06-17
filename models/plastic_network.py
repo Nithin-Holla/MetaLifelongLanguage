@@ -17,10 +17,9 @@ logger = logging.getLogger('PlasticNetwork-Log')
 
 class PlasticNetwork:
 
-    def __init__(self, device, n_classes, training_mode, **kwargs):
+    def __init__(self, device, n_classes, **kwargs):
         self.lr = kwargs.get('lr', 3e-5)
         self.device = device
-        self.training_mode = training_mode
         self.model = PlasticTransformerClsModel(model_name=kwargs.get('model'),
                                                 n_classes=n_classes,
                                                 max_length=kwargs.get('max_length'),
