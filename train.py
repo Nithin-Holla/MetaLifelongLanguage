@@ -12,6 +12,7 @@ import datasets.utils
 from models.anml import ANML
 from models.baseline import Baseline
 from models.oml import OML
+from models.plastic_network import PlasticNetwork
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('ContinualLearningLog')
@@ -78,6 +79,8 @@ if __name__ == '__main__':
         learner = OML(device=device, n_classes=n_classes, **vars(args))
     elif args.learner == 'anml':
         learner = ANML(device=device, n_classes=n_classes, **vars(args))
+    elif args.learner == 'plastic':
+        learner = PlasticNetwork(device=device, n_classes=n_classes, **vars(args))
     else:
         raise NotImplementedError
     logger.info('Using {} as learner'.format(learner.__class__.__name__))
