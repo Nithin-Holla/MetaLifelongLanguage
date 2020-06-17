@@ -94,7 +94,7 @@ class PlasticNetwork:
         log_freq = kwargs.get('log_freq', 500)
         mini_batch_size = kwargs.get('mini_batch_size')
         train_dataset = data.ConcatDataset(train_datasets)
-        train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=True,
+        train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=False,
                                            collate_fn=datasets.utils.batch_encode)
         self.train(dataloader=train_dataloader, log_freq=log_freq)
 
