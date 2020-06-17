@@ -156,7 +156,7 @@ class PlasticTransformerClsModel(nn.Module):
             group_by_class[lbl].append(repr[i])
         for lbl in group_by_class:
             mean_repr = torch.mean(torch.stack(group_by_class[lbl]))
-            self.hebbian[lbl, :] = (1 - self.eta) * self.hebbian + self.eta * mean_repr
+            self.hebbian[lbl, :] = (1 - self.eta) * self.hebbian[lbl, :] + self.eta * mean_repr
 
 
 class ReplayMemory:
