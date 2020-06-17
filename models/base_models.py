@@ -127,7 +127,7 @@ class PlasticTransformerClsModel(nn.Module):
         else:
             raise NotImplementedError
         self.linear = LinearPlastic(768, n_classes)
-        self.hebbian = torch.zeros_like(self.linear.weight, requires_grad=True).to(self.device)
+        self.hebbian = torch.zeros_like(self.linear.weight).to(self.device)
         self.to(self.device)
 
     def encode_text(self, text):
