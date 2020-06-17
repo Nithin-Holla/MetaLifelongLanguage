@@ -47,7 +47,7 @@ class PlasticNetwork:
             labels = torch.tensor(labels).to(self.device)
             input_dict = self.model.encode_text(text)
             repr = self.model(input_dict, out_from='transformers')
-            self.update_hebbian(repr, labels)
+            self.model.update_hebbian(repr, labels)
             output = self.model(repr, out_from='linear')
             loss = self.loss_fn(output, labels)
             self.optimizer.zero_grad()
