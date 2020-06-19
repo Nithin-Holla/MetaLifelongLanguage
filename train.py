@@ -2,14 +2,17 @@ import logging
 import os
 import random
 from argparse import ArgumentParser
+from datetime import datetime
 
 import numpy as np
 
 import torch
 
 import datasets.utils
+from models.anml import ANML
 from models.baseline import Baseline
 from models.oml import OML
+from models.plastic_network import PlasticNetwork
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('ContinualLearningLog')
@@ -29,16 +32,20 @@ if __name__ == '__main__':
     # Parse command line arguments
     parser = ArgumentParser()
     parser.add_argument('--order', type=int, help='Order of datasets', required=True)
-    parser.add_argument('--lr', type=float, help='Learning rate', default=3e-5)
+    parser.add_argument('--n_epochs', type=int, help='Number of epochs (only for baseline)', default=1)
+    parser.add_argument('--lr', type=float, help='Learning rate (only for baseline)', default=3e-5)
     parser.add_argument('--inner_lr', type=float, help='Inner-loop learning rate', default=0.001)
     parser.add_argument('--meta_lr', type=float, help='Meta learning rate', default=3e-5)
     parser.add_argument('--model', type=str, help='Name of the model', default='bert')
     parser.add_argument('--learner', type=str, help='Learner method', default='oml')
-    parser.add_argument('--n_episodes', type=int, help='Number of meta-training episodes', default=1000)
+    parser.add_argument('--n_episodes', type=int, help='Number of meta-training episodes', default=10000)
     parser.add_argument('--batch_size', type=int, help='Batch size of tasks', default=1)
     parser.add_argument('--mini_batch_size', type=int, help='Batch size of data points within an episode', default=32)
     parser.add_argument('--updates', type=int, help='Number of inner-loop updates', default=5)
     parser.add_argument('--write_prob', type=float, help='Write probability for buffer memory', default=0.5)
+    parser.add_argument('--max_length', type=int, help='Maximum sequence length for the input', default=128)
+    parser.add_argument('--seed', type=int, help='Random seed', default=42)
+    parser.add_argument('--replay_rate', type=float, help='Replay rate from memory', default=0.01)
     args = parser.parse_args()
     logger.info('Using configuration: {}'.format(vars(args)))
 
@@ -46,9 +53,9 @@ if __name__ == '__main__':
     base_path = os.path.dirname(os.path.abspath(__file__))
 
     # Set random seed
-    torch.manual_seed(42)
-    random.seed(42)
-    np.random.seed(42)
+    torch.manual_seed(args.seed)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
 
     # Load the datasets
     logger.info('Loading the datasets')
@@ -64,17 +71,28 @@ if __name__ == '__main__':
 
     # Load the model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if args.learner == 'baseline':
-        learner = Baseline(device=device, n_classes=n_classes, **vars(args))
+    if args.learner == 'sequential':
+        learner = Baseline(device=device, n_classes=n_classes, training_mode='sequential', **vars(args))
+    elif args.learner == 'multi_task':
+        learner = Baseline(device=device, n_classes=n_classes, training_mode='multi_task', **vars(args))
     elif args.learner == 'oml':
         learner = OML(device=device, n_classes=n_classes, **vars(args))
+    elif args.learner == 'anml':
+        learner = ANML(device=device, n_classes=n_classes, **vars(args))
+    elif args.learner == 'plastic':
+        learner = PlasticNetwork(device=device, n_classes=n_classes, **vars(args))
     else:
         raise NotImplementedError
     logger.info('Using {} as learner'.format(learner.__class__.__name__))
 
     # Training
+    model_file_name = learner.__class__.__name__ + '-' + str(datetime.now()).replace(':', '-').replace(' ', '_') + '.pt'
+    model_dir = os.path.join(base_path, 'saved_models')
+    os.makedirs(model_dir, exist_ok=True)
     logger.info('----------Training starts here----------')
     learner.training(train_datasets, **vars(args))
+    learner.save_model(os.path.join(model_dir, model_file_name))
+    logger.info('Saved the model with name {}'.format(model_file_name))
 
     # Testing
     logger.info('----------Testing starts here----------')
