@@ -37,7 +37,7 @@ def make_rel_prediction(cosine_sim, ranking_label):
         pos_idx = [i for i, lbl in enumerate(ranking_label) if lbl == 1]
         for i in range(len(pos_idx) - 1):
             start_idx = pos_idx[i]
-            end_idx = pos_idx[i+1] - 1
+            end_idx = pos_idx[i+1]
             subset = cosine_sim[start_idx: end_idx]
             pred.append(torch.argmax(subset))
     pred = torch.tensor(pred)
