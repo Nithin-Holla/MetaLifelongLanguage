@@ -48,7 +48,7 @@ if __name__ == '__main__':
     
     # Load training and validation data
     logger.info('Loading the dataset')
-    data_dir = os.path.join('../data/LifelongFewRel')
+    data_dir = os.path.join(base_path, '../data/LifelongFewRel')
     relation_file = os.path.join(data_dir, 'relation_name.txt')
     training_file = os.path.join(data_dir, 'training_data.txt')
     validation_file = os.path.join(data_dir, 'val_data.txt')
