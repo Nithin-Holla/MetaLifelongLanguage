@@ -9,9 +9,9 @@ import numpy as np
 import torch
 
 import datasets.utils
-from models.anml import ANML
-from models.baseline import Baseline
-from models.oml import OML
+from models.cls_anml import ANML
+from models.cls_baseline import Baseline
+from models.cls_oml import OML
 from models.plastic_network import PlasticNetwork
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

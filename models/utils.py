@@ -15,6 +15,13 @@ def calculate_metrics(predictions, labels, binary=False):
     return accuracy, precision, recall, f1_score
 
 
+def calculate_accuracy(predictions, labels):
+    predictions = np.array(predictions)
+    labels = np.array(labels)
+    accuracy = metrics.accuracy_score(labels, predictions)
+    return accuracy
+
+
 def make_prediction(output):
     with torch.no_grad():
         if output.size(1) == 1:
@@ -22,3 +29,31 @@ def make_prediction(output):
         else:
             pred = output.max(-1)[1]
     return pred
+
+
+def make_rel_prediction(cosine_sim, ranking_label):
+    pred = []
+    with torch.no_grad():
+        pos_idx = [i for i, lbl in enumerate(ranking_label) if lbl == 1]
+        for i in range(len(pos_idx) - 1):
+            start_idx = pos_idx[i]
+            end_idx = pos_idx[i+1] - 1
+            subset = cosine_sim[start_idx: end_idx]
+            pred.append(torch.argmax(subset))
+    pred = torch.tensor(pred)
+    targets = torch.zeros_like(pred)
+    return pred, targets
+
+
+def split_rel_scores(cosine_sim, ranking_label):
+    pos_scores, neg_scores = [], []
+    pos_index = 0
+    for i in range(len(ranking_label)):
+        if ranking_label[i] == 1:
+            pos_index = i
+        elif ranking_label[i] == -1:
+            pos_scores.append(cosine_sim[pos_index])
+            neg_scores.append(cosine_sim[i])
+    pos_scores = torch.stack(pos_scores)
+    neg_scores = torch.stack(neg_scores)
+    return pos_scores, neg_scores
