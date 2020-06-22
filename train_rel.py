@@ -82,7 +82,6 @@ if __name__ == '__main__':
 
     # Training
     logger.info('----------Training starts here----------')
-    print(sum([t.__len__() for t in train_datasets]))
     learner.training(train_datasets, **vars(args))
 
     # Testing
