@@ -91,7 +91,7 @@ def read_rel_data(sample_file):
             if len(items[0]) > 0:
                 relation_ix = int(items[0])
                 if items[1] != 'noNegativeAnswer':
-                    candidate_ixs = [int(ix) for ix in items[1].split() if ix != relation_ix]
+                    candidate_ixs = [int(ix) for ix in items[1].split() if int(ix) != relation_ix]
                     sentence = remove_return_sym(items[2]).split()
                     sample_data.append([relation_ix, candidate_ixs, sentence])
     return sample_data

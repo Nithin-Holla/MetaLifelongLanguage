@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--n_epochs', type=int, help='Number of epochs (only for baseline)', default=3)
     parser.add_argument('--lr', type=float, help='Learning rate (only for baseline)', default=0.001)
-    parser.add_argument('-hidden_size', type=int, help='Hidden size (only for LSTM model)', default=200)
+    parser.add_argument('--hidden_size', type=int, help='Hidden size (only for LSTM model)', default=200)
     parser.add_argument('--inner_lr', type=float, help='Inner-loop learning rate', default=0.001)
     parser.add_argument('--meta_lr', type=float, help='Meta learning rate', default=3e-5)
     parser.add_argument('--model', type=str, help='Name of the model', default='lstm')
