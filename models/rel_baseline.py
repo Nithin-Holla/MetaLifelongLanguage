@@ -6,7 +6,7 @@ import numpy as np
 
 from torch.utils import data
 
-import datasets
+import datasets.utils
 import models.utils
 from models.base_models import RelationLSTMRLN, LinearPLN
 
