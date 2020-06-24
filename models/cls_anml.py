@@ -35,7 +35,7 @@ class ANML:
                                       n_classes=n_classes,
                                       max_length=kwargs.get('max_length'),
                                       device=device)
-        self.memory = ReplayMemory(self.write_prob)
+        self.memory = ReplayMemory(write_prob=self.write_prob, tuple_size=2)
         self.loss_fn = nn.CrossEntropyLoss()
 
         logger.info('Loaded {} as NM'.format(self.nm.__class__.__name__))

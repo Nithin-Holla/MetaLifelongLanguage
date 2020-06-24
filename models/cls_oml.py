@@ -32,7 +32,7 @@ class OML:
                                   max_length=kwargs.get('max_length'),
                                   device=device)
         self.pln = LinearPLN(in_dim=768, out_dim=n_classes, device=device)
-        self.memory = ReplayMemory(self.write_prob)
+        self.memory = ReplayMemory(write_prob=self.write_prob, tuple_size=2)
         self.loss_fn = nn.CrossEntropyLoss()
 
         logger.info('Loaded {} as RLN'.format(self.rln.__class__.__name__))

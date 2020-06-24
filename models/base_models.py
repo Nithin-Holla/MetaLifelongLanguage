@@ -196,32 +196,35 @@ class RelationLSTMRLN(nn.Module):
 
 class ReplayMemory:
 
-    def __init__(self, write_prob):
+    def __init__(self, write_prob, tuple_size):
         self.buffer = []
         self.write_prob = write_prob
+        self.tuple_size = tuple_size
 
-    def write(self, text, label):
-        input_tuple = (text, label)
+    def write(self, input_tuple):
         if random.random() < self.write_prob:
             self.buffer.append(input_tuple)
 
     def read(self):
-        text, label = random.choice(self.buffer)
-        return text, label
+        return random.choice(self.buffer)
 
-    def write_batch(self, text, labels):
-        if isinstance(labels, torch.Tensor):
-            labels = labels.tolist()
-        for txt, lbl in zip(text, labels):
-            self.write(txt, lbl)
+    def write_batch(self, *elements):
+        element_list = []
+        for e in elements:
+            if isinstance(e, torch.Tensor):
+                element_list.append(e.tolist())
+            else:
+                element_list.append(e)
+        for write_tuple in zip(*element_list):
+            self.write(write_tuple)
 
     def read_batch(self, batch_size):
-        text, label = [], []
+        contents = [[] * self.tuple_size]
         for _ in range(batch_size):
-            txt, lbl = self.read()
-            text.append(txt)
-            label.append(lbl)
-        return text, label
+            read_tuple = self.read()
+            for i in range(len(read_tuple)):
+                contents[i].append(read_tuple[i])
+        return tuple(contents)
 
     def len(self):
         return len(self.buffer)

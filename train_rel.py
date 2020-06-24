@@ -11,6 +11,7 @@ import datasets.utils
 import models.utils
 from datasets.lifelong_fewrel_dataset import LifelongFewRelDataset
 from models.rel_baseline import Baseline
+from models.rel_oml import OML
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('ContinualLearningLog')
@@ -69,6 +70,8 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if args.learner == 'sequential':
         learner = Baseline(device=device, glove=glove, **vars(args))
+    elif args.learner == 'oml':
+        learner = OML(device=device, glove=glove, **vars(args))
     else:
         raise NotImplementedError
     logger.info('Using {} as learner'.format(learner.__class__.__name__))
