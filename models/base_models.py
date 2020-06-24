@@ -194,6 +194,19 @@ class RelationLSTMRLN(nn.Module):
         return sent_out, rel_out
 
 
+class RelationLinearPLN(nn.Module):
+
+    def __init__(self, in_dim, out_dim, device):
+        super(RelationLinearPLN, self).__init__()
+        self.sent_linear = LinearPLN(in_dim, out_dim, device)
+        self.relation_linear = LinearPLN(in_dim, out_dim, device)
+
+    def forward(self, sent_input, rel_input):
+        sent_out = self.sent_linear(sent_input)
+        rel_out = self.relation_linear(rel_input)
+        return sent_out, rel_out
+
+
 class ReplayMemory:
 
     def __init__(self, write_prob, tuple_size):

@@ -11,7 +11,7 @@ from torch.utils import data
 
 import datasets.utils
 import models.utils
-from models.base_models import LinearPLN, ReplayMemory, RelationLSTMRLN
+from models.base_models import ReplayMemory, RelationLSTMRLN, RelationLinearPLN
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('OML-Log')
@@ -31,9 +31,9 @@ class OML:
             self.rln = RelationLSTMRLN(input_size=300,
                                        hidden_size=kwargs.get('hidden_size'),
                                        device=device)
-            self.pln = LinearPLN(in_dim=2*kwargs.get('hidden_size'),
-                                 out_dim=kwargs.get('hidden_size'),
-                                 device=device)
+            self.pln = RelationLinearPLN(in_dim=2 * kwargs.get('hidden_size'),
+                                         out_dim=kwargs.get('hidden_size') // 4,
+                                         device=device)
             meta_params = [p for p in self.rln.parameters() if p.requires_grad] + \
                           [p for p in self.pln.parameters() if p.requires_grad]
             self.meta_optimizer = optim.Adam(meta_params, lr=self.meta_lr)
@@ -90,8 +90,7 @@ class OML:
                 batch_rel_len = batch_rel_len.to(self.device)
 
                 x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                x_embed = fpln(x_embed)
-                rel_embed = fpln(rel_embed)
+                x_embed, rel_embed = fpln(x_embed, rel_embed)
 
                 cosine_sim = self.cos(x_embed, rel_embed)
                 pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
@@ -123,8 +122,7 @@ class OML:
 
                 with torch.no_grad():
                     x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                    x_embed = fpln(x_embed)
-                    rel_embed = fpln(rel_embed)
+                    x_embed, rel_embed = fpln(x_embed, rel_embed)
 
                     cosine_sim = self.cos(x_embed, rel_embed)
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
@@ -186,8 +184,7 @@ class OML:
                     batch_rel_len = batch_rel_len.to(self.device)
 
                     x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                    x_embed = fpln(x_embed)
-                    rel_embed = fpln(rel_embed)
+                    x_embed, rel_embed = fpln(x_embed, rel_embed)
 
                     cosine_sim = self.cos(x_embed, rel_embed)
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
@@ -234,8 +231,7 @@ class OML:
                     batch_rel_len = batch_rel_len.to(self.device)
 
                     x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                    x_embed = fpln(x_embed)
-                    rel_embed = fpln(rel_embed)
+                    x_embed, rel_embed = fpln(x_embed, rel_embed)
 
                     cosine_sim = self.cos(x_embed, rel_embed)
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
