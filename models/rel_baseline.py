@@ -16,11 +16,12 @@ logger = logging.getLogger('Baseline-Log')
 
 class Baseline:
 
-    def __init__(self, device, glove, **kwargs):
+    def __init__(self, device, training_mode, **kwargs):
         self.lr = kwargs.get('lr', 3e-5)
         self.device = device
-        self.glove = glove
+        self.training_mode = training_mode
         if kwargs.get('model') == 'lstm':
+            self.glove = kwargs.get('glove')
             self.rln = RelationLSTMRLN(input_size=300,
                                        hidden_size=kwargs.get('hidden_size'),
                                        device=device)
@@ -125,8 +126,15 @@ class Baseline:
         n_epochs = kwargs.get('n_epochs', 1)
         log_freq = kwargs.get('log_freq', 20)
         mini_batch_size = kwargs.get('mini_batch_size')
-        for cluster_idx, train_dataset in enumerate(train_datasets):
-            logger.info('Training on cluster {}'.format(cluster_idx + 1))
+        if self.training_mode == 'sequential':
+            for cluster_idx, train_dataset in enumerate(train_datasets):
+                logger.info('Training on cluster {}'.format(cluster_idx + 1))
+                train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=True,
+                                                   collate_fn=datasets.utils.rel_encode)
+                self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
+        elif self.training_mode == 'multi_task':
+            train_dataset = data.ConcatDataset(train_datasets)
+            logger.info('Training multi-task model on all datasets')
             train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=True,
                                                collate_fn=datasets.utils.rel_encode)
             self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)

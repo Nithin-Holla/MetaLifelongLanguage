@@ -69,7 +69,9 @@ if __name__ == '__main__':
     # Load the model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if args.learner == 'sequential':
-        learner = Baseline(device=device, glove=glove, **vars(args))
+        learner = Baseline(device=device, training_mode='sequential', glove=glove, **vars(args))
+    elif args.learner == 'multi_task':
+        learner = Baseline(device=device, training_mode='multi_task', glove=glove, **vars(args))
     elif args.learner == 'oml':
         learner = OML(device=device, glove=glove, **vars(args))
     else:
