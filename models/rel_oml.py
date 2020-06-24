@@ -103,7 +103,7 @@ class OML:
                 task_predictions.extend(pred.tolist())
                 task_labels.extend(targets.tolist())
 
-            acc = models.utils.calculate_metrics(task_predictions, task_labels)
+            acc = models.utils.calculate_accuracy(task_predictions, task_labels)
 
             logger.info('Support set metrics: Loss = {:.4f}, accuracy = {:.4f}'.format(np.mean(support_loss), acc))
 
@@ -137,7 +137,7 @@ class OML:
                 all_predictions.extend(pred.tolist())
                 all_labels.extend(targets.tolist())
 
-        acc = models.utils.calculate_metrics(all_predictions, all_labels)
+        acc = models.utils.calculate_accuracy(all_predictions, all_labels)
         logger.info('Test metrics: Loss = {:.4f}, accuracy = {:.4f}'.format(np.mean(all_losses), acc))
 
         return acc
