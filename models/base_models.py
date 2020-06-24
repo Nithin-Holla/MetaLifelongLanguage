@@ -219,7 +219,7 @@ class ReplayMemory:
             self.write(write_tuple)
 
     def read_batch(self, batch_size):
-        contents = [[] * self.tuple_size]
+        contents = [[]] * self.tuple_size
         for _ in range(batch_size):
             read_tuple = self.read()
             for i in range(len(read_tuple)):
