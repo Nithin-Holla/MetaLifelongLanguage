@@ -1,5 +1,7 @@
 import os
 import random
+import re
+
 import torch
 from sklearn.cluster import KMeans
 
@@ -77,7 +79,8 @@ def read_relations(relation_file):
     relation_list = ['fill']
     with open(relation_file, encoding='utf8') as file_in:
         for line in file_in:
-            line = remove_return_sym(line).split("///")[1]
+            line = remove_return_sym(line)
+            line = re.sub(r'/', '', line)
             line = line.split()
             relation_list.append(line)
     return relation_list

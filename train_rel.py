@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     # Load GloVe vectors
     logger.info('Loading GloVe vectors')
-    glove = torchtext.vocab.GloVe(name='840B', dim=300)
+    glove = torchtext.vocab.GloVe(name='6B', dim=300)
     logger.info('Finished loading GloVe vectors')
 
     # Get relation embeddings for clustering
