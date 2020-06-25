@@ -8,7 +8,7 @@ from torch.utils import data
 
 import datasets.utils
 import models.utils
-from models.base_models import RelationLSTMRLN, LinearPLN
+from models.base_models import RelationLSTMRLN, RelationLinearPLN
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Baseline-Log')
@@ -25,9 +25,9 @@ class Baseline:
             self.rln = RelationLSTMRLN(input_size=300,
                                        hidden_size=kwargs.get('hidden_size'),
                                        device=device)
-            self.pln = LinearPLN(in_dim=2*kwargs.get('hidden_size'),
-                                 out_dim=kwargs.get('hidden_size'),
-                                 device=device)
+            self.pln = RelationLinearPLN(in_dim=2 * kwargs.get('hidden_size'),
+                                         out_dim=kwargs.get('hidden_size') // 4,
+                                         device=device)
             params = [p for p in self.rln.parameters() if p.requires_grad] + \
                      [p for p in self.pln.parameters() if p.requires_grad]
             self.optimizer = optim.Adam(params, lr=self.lr)
@@ -68,8 +68,7 @@ class Baseline:
                 batch_rel_len = batch_rel_len.to(self.device)
 
                 x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                x_embed = self.pln(x_embed)
-                rel_embed = self.pln(rel_embed)
+                x_embed, rel_embed = self.pln(x_embed, rel_embed)
 
                 cosine_sim = self.cos(x_embed, rel_embed)
                 pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
@@ -110,8 +109,7 @@ class Baseline:
 
             with torch.no_grad():
                 x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                x_embed = self.pln(x_embed)
-                rel_embed = self.pln(rel_embed)
+                x_embed, rel_embed = self.pln(x_embed, rel_embed)
                 cosine_sim = self.cos(x_embed, rel_embed)
 
             pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
