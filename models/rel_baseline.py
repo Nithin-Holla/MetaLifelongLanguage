@@ -5,10 +5,11 @@ from torch import nn, optim
 import numpy as np
 
 from torch.utils import data
+from transformers import AdamW
 
 import datasets.utils
 import models.utils
-from models.base_models import RelationLSTMRLN, RelationLinearPLN
+from models.base_models import RelationLSTMRLN, RelationLinearPLN, TransformerRLN, LinearPLN
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('Baseline-Log')
@@ -20,7 +21,9 @@ class Baseline:
         self.lr = kwargs.get('lr', 3e-5)
         self.device = device
         self.training_mode = training_mode
-        if kwargs.get('model') == 'lstm':
+        self.model_type = kwargs.get('model')
+
+        if self.model_type == 'lstm':
             self.glove = kwargs.get('glove')
             self.rln = RelationLSTMRLN(input_size=300,
                                        hidden_size=kwargs.get('hidden_size'),
@@ -31,9 +34,20 @@ class Baseline:
             params = [p for p in self.rln.parameters() if p.requires_grad] + \
                      [p for p in self.pln.parameters() if p.requires_grad]
             self.optimizer = optim.Adam(params, lr=self.lr)
+        elif self.model_type == 'bert' or self.model_type == 'albert':
+            self.rln = TransformerRLN(model_name=self.model_type,
+                                      max_length=kwargs.get('max_length'),
+                                      device=device)
+            self.pln = LinearPLN(in_dim=768, out_dim=1, device=device)
+            params = [p for p in self.rln.parameters() if p.requires_grad] + \
+                     [p for p in self.pln.parameters() if p.requires_grad]
+            self.optimizer = AdamW(params, lr=self.lr)
         else:
             raise NotImplementedError
-        logger.info('Loaded {} as model'.format(self.rln.__class__.__name__))
+
+        logger.info('Loaded {} as RLN'.format(self.rln.__class__.__name__))
+        logger.info('Loaded {} as PLN'.format(self.pln.__class__.__name__))
+
         self.loss_fn = nn.MarginRankingLoss(margin=kwargs.get('loss_margin'))
         self.cos = nn.CosineSimilarity(dim=1)
 
@@ -47,6 +61,9 @@ class Baseline:
         self.rln.load_state_dict(checkpoint['rln'])
         self.pln.load_state_dict(checkpoint['pln'])
 
+    def scale_tanh(self, tanh_value):
+        return 0.5 * (tanh_value + 1)
+
     def train(self, dataloader, n_epochs, log_freq):
 
         self.rln.train()
@@ -59,18 +76,24 @@ class Baseline:
             for text, label, candidates in dataloader:
                 replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text, label,
                                                                                                          candidates)
-                batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
-                batch_rel, batch_rel_len = datasets.utils.glove_vectorize(replicated_relations, self.glove)
 
-                batch_x = batch_x.to(self.device)
-                batch_x_len = batch_x_len.to(self.device)
-                batch_rel = batch_rel.to(self.device)
-                batch_rel_len = batch_rel_len.to(self.device)
+                if self.model_type == 'lstm':
+                    batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
+                    batch_rel, batch_rel_len = datasets.utils.glove_vectorize(replicated_relations, self.glove)
+                    batch_x = batch_x.to(self.device)
+                    batch_x_len = batch_x_len.to(self.device)
+                    batch_rel = batch_rel.to(self.device)
+                    batch_rel_len = batch_rel_len.to(self.device)
+                    x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
+                    x_embed, rel_embed = self.pln(x_embed, rel_embed)
+                    cosine_sim = self.cos(x_embed, rel_embed)
 
-                x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                x_embed, rel_embed = self.pln(x_embed, rel_embed)
+                else:
+                    input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
+                    repr = self.rln(input_dict)
+                    tanh_score = self.pln(repr)
+                    cosine_sim = self.scale_tanh(tanh_score)
 
-                cosine_sim = self.cos(x_embed, rel_embed)
                 pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
                 loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
@@ -99,18 +122,26 @@ class Baseline:
         for text, label, candidates in dataloader:
             replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text, label,
                                                                                                      candidates)
-            batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
-            batch_rel, batch_rel_len = datasets.utils.glove_vectorize(replicated_relations, self.glove)
-
-            batch_x = batch_x.to(self.device)
-            batch_x_len = batch_x_len.to(self.device)
-            batch_rel = batch_rel.to(self.device)
-            batch_rel_len = batch_rel_len.to(self.device)
 
             with torch.no_grad():
-                x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                x_embed, rel_embed = self.pln(x_embed, rel_embed)
-                cosine_sim = self.cos(x_embed, rel_embed)
+
+                if self.model_type == 'lstm':
+
+                    batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
+                    batch_rel, batch_rel_len = datasets.utils.glove_vectorize(replicated_relations, self.glove)
+                    batch_x = batch_x.to(self.device)
+                    batch_x_len = batch_x_len.to(self.device)
+                    batch_rel = batch_rel.to(self.device)
+                    batch_rel_len = batch_rel_len.to(self.device)
+                    x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
+                    x_embed, rel_embed = self.pln(x_embed, rel_embed)
+                    cosine_sim = self.cos(x_embed, rel_embed)
+
+                else:
+                    input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
+                    repr = self.rln(input_dict)
+                    tanh_score = self.pln(repr)
+                    cosine_sim = self.scale_tanh(tanh_score)
 
             pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
             all_predictions.extend(pred.tolist())
