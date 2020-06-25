@@ -43,7 +43,7 @@ class OML:
             self.rln = TransformerRLN(model_name=self.model_type,
                                       max_length=kwargs.get('max_length'),
                                       device=device)
-            self.rln = LinearPLN(in_dim=768, out_dim=1, device=device)
+            self.pln = LinearPLN(in_dim=768, out_dim=1, device=device)
             meta_params = [p for p in self.rln.parameters() if p.requires_grad] + \
                           [p for p in self.pln.parameters() if p.requires_grad]
             self.meta_optimizer = AdamW(meta_params, lr=self.meta_lr)
