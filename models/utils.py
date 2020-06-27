@@ -35,11 +35,14 @@ def make_rel_prediction(cosine_sim, ranking_label):
     pred = []
     with torch.no_grad():
         pos_idx = [i for i, lbl in enumerate(ranking_label) if lbl == 1]
-        for i in range(len(pos_idx) - 1):
-            start_idx = pos_idx[i]
-            end_idx = pos_idx[i+1]
-            subset = cosine_sim[start_idx: end_idx]
-            pred.append(torch.argmax(subset))
+        if len(pos_idx) == 1:
+            pred.append(torch.argmax(cosine_sim))
+        else:
+            for i in range(len(pos_idx) - 1):
+                start_idx = pos_idx[i]
+                end_idx = pos_idx[i+1]
+                subset = cosine_sim[start_idx: end_idx]
+                pred.append(torch.argmax(subset))
     pred = torch.tensor(pred)
     targets = torch.zeros_like(pred)
     return pred, targets
