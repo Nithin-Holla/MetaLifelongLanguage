@@ -65,9 +65,10 @@ class OML:
         grouped_text = defaultdict(list)
         grouped_data_set = []
         for txt, lbl, cand in zip(data_set['text'], data_set['label'], data_set['candidates']):
-            grouped_text[lbl].append((txt, lbl, cand))
-        for lbl in grouped_text.keys():
-            for txt, lbl, cand in grouped_text[lbl]:
+            key = ' '.join(lbl)
+            grouped_text[key].append((txt, lbl, cand))
+        for key in grouped_text.keys():
+            for txt, lbl, cand in grouped_text[key]:
                 grouped_data_set.append((txt, lbl, cand))
         return grouped_data_set
 
