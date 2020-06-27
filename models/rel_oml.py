@@ -69,7 +69,7 @@ class OML:
             grouped_text[key].append((txt, lbl, cand))
         for key in grouped_text.keys():
             for txt, lbl, cand in grouped_text[key]:
-                grouped_data_set.append((txt, lbl, cand))
+                grouped_data_set.append(([txt], [lbl], [cand]))
         return grouped_data_set
 
     def save_model(self, model_path):
