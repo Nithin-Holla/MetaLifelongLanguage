@@ -125,14 +125,17 @@ def get_relation_embedding(relations, glove_file):
     return rel_embed
 
 
-def create_relation_clusters(num_clusters, relation_embedding):
-    kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(relation_embedding[1:])
+def create_relation_clusters(num_clusters, relation_embedding, relation_index):
+    ordered_relation_embedding = np.zeros_like(relation_embedding[1:])
+    for i, rel_idx in enumerate(relation_index):
+        ordered_relation_embedding[i] = relation_embedding[rel_idx]
+    kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(ordered_relation_embedding)
     labels = kmeans.labels_
     rel_embed = {}
     cluster_index = {}
     for i in range(len(labels)):
-        cluster_index[i + 1] = labels[i]
-        rel_embed[i + 1] = relation_embedding[i]
+        cluster_index[relation_index[i]] = labels[i]
+        rel_embed[relation_index[i]] = relation_embedding[i]
     return cluster_index, rel_embed
 
 
@@ -187,9 +190,21 @@ def replicate_rel_data(text, label, candidates):
     return replicated_text, replicated_relations, ranking_label
 
 
+def get_relation_index(data):
+    relation_pool = []
+    for entry in data:
+        relation_number = entry[0]
+        if relation_number not in relation_pool:
+            relation_pool.append(relation_number)
+    return relation_pool
+
+
 def prepare_rel_datasets(train_data, relation_names, relation_embeddings, num_clusters):
     train_datasets = []
-    cluster_labels, relation_embeddings = create_relation_clusters(num_clusters, relation_embeddings)
+
+    relation_index = get_relation_index(train_data)
+
+    cluster_labels, relation_embeddings = create_relation_clusters(num_clusters, relation_embeddings, relation_index)
 
     shuffle_index = list(range(num_clusters))
     random.shuffle(shuffle_index)
