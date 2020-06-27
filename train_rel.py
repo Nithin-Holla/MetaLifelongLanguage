@@ -62,9 +62,10 @@ if __name__ == '__main__':
     logger.info('Loading GloVe vectors')
     glove = torchtext.vocab.GloVe(name='6B', dim=300)
     logger.info('Finished loading GloVe vectors')
+    glove_file = os.path.join(base_path, '.vector_cache/glove.6B.300d.txt')
 
     # Get relation embeddings for clustering
-    relation_embeddings = datasets.utils.get_relation_embedding(relation_names, glove)
+    relation_embeddings = datasets.utils.get_relation_embedding(relation_names, glove_file)
 
     # Load the model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
