@@ -101,27 +101,15 @@ def read_rel_data(sample_file):
     return sample_data
 
 
-def read_glove_embeddings(glove_file):
-    glove_dict = {}
-    with open(glove_file, encoding='utf-8') as in_file:
-        for line in in_file:
-            values = line.split()
-            word = values[0]
-            glove_dict[word] = np.asarray(values[1:], dtype='float32')
-    return glove_dict
-
-
-def get_relation_embedding(relations, glove_file):
-    glove_dict = read_glove_embeddings(glove_file)
+def get_relation_embedding(relations, glove):
     rel_embed = []
     for rel in relations:
-        phrase_embed = []
-        for word in rel:
-            word = word.lower()
-            if word in glove_dict:
-                phrase_embed.append(glove_dict[word])
-        rel_embed.append(np.mean(phrase_embed, axis=0))
-    rel_embed = np.asarray(rel_embed)
+        word_embed = glove.get_vecs_by_tokens(rel, lower_case_backup=True)
+        if len(word_embed.shape) == 2:
+            rel_embed.append(torch.mean(word_embed, dim=0))
+        else:
+            rel_embed.append(word_embed)
+    rel_embed = torch.stack(rel_embed)
     return rel_embed
 
 
