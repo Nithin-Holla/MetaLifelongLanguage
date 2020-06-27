@@ -90,7 +90,7 @@ class OML:
         self.rln.eval()
         self.pln.train()
 
-        support_set = []
+        support_set = defaultdict(list)
         for _ in range(updates):
             text, label, candidates = self.memory.read_batch(batch_size=mini_batch_size)
             support_set['text'].extend(text)
