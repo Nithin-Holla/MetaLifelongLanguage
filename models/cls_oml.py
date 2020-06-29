@@ -256,3 +256,5 @@ class OML:
         logger.info('Overall test metrics: Accuracy = {:.4f}, precision = {:.4f}, recall = {:.4f}, '
                     'F1 score = {:.4f}'.format(np.mean(accuracies), np.mean(precisions), np.mean(recalls),
                                                np.mean(f1s)))
+
+        return accuracies
