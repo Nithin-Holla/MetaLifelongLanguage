@@ -61,15 +61,16 @@ class OML:
         inner_params = [p for p in self.pln.parameters() if p.requires_grad]
         self.inner_optimizer = optim.SGD(inner_params, lr=self.inner_lr)
 
-    def group_by_relation(self, data_set):
+    def group_by_relation(self, data_set, mini_batch_size):
         grouped_text = defaultdict(list)
         grouped_data_set = []
         for txt, lbl, cand in zip(data_set['text'], data_set['label'], data_set['candidates']):
             key = ' '.join(lbl)
             grouped_text[key].append((txt, lbl, cand))
         for key in grouped_text.keys():
-            for txt, lbl, cand in grouped_text[key]:
-                grouped_data_set.append(([txt], [lbl], [cand]))
+            for i in range(0, len(grouped_text[key]), mini_batch_size):
+                subset = grouped_text[key][i: i + mini_batch_size]
+                grouped_data_set.append(list(zip(*subset)))
         return grouped_data_set
 
     def save_model(self, model_path):
@@ -97,7 +98,7 @@ class OML:
             support_set['label'].extend(label)
             support_set['candidates'].extend(candidates)
 
-        support_set = self.group_by_relation(support_set)
+        support_set = self.group_by_relation(support_set, mini_batch_size)
 
         with higher.innerloop_ctx(self.pln, self.inner_optimizer,
                                   copy_initial_weights=False,
@@ -215,7 +216,7 @@ class OML:
                         logger.info('Terminating training as all the data is seen')
                         return
 
-                support_set = self.group_by_relation(support_set)
+                support_set = self.group_by_relation(support_set, mini_batch_size)
 
                 for text, label, candidates in support_set:
                     replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text,
