@@ -126,7 +126,6 @@ class OML:
 
     def training(self, train_datasets, **kwargs):
         n_episodes = kwargs.get('n_episodes')
-        batch_size = kwargs.get('batch_size')
         updates = kwargs.get('updates')
         mini_batch_size = kwargs.get('mini_batch_size')
 
@@ -227,13 +226,12 @@ class OML:
                             param.grad = meta_grad.detach()
 
                 # Meta optimizer step
-                if (episode_id + 1) % batch_size == 0:
-                    rln_params = [p for p in self.rln.parameters() if p.requires_grad]
-                    pln_params = [p for p in self.pln.parameters() if p.requires_grad]
-                    for param in rln_params + pln_params:
-                        param.grad /= (batch_size * len(query_set))
-                    self.meta_optimizer.step()
-                    self.meta_optimizer.zero_grad()
+                rln_params = [p for p in self.rln.parameters() if p.requires_grad]
+                pln_params = [p for p in self.pln.parameters() if p.requires_grad]
+                for param in rln_params + pln_params:
+                    param.grad /= len(query_set)
+                self.meta_optimizer.step()
+                self.meta_optimizer.zero_grad()
 
                 logger.info('Episode {}/{} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
                             'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,

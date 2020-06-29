@@ -133,7 +133,6 @@ class ANML:
 
     def training(self, train_datasets, **kwargs):
         n_episodes = kwargs.get('n_episodes')
-        batch_size = kwargs.get('batch_size')
         updates = kwargs.get('updates')
         mini_batch_size = kwargs.get('mini_batch_size')
 
@@ -238,13 +237,12 @@ class ANML:
                             param.grad = meta_grad.detach()
 
                 # Meta optimizer step
-                if (episode_id + 1) % batch_size == 0:
-                    nm_params = [p for p in self.nm.parameters() if p.requires_grad]
-                    pn_params = [p for p in self.pn.parameters() if p.requires_grad]
-                    for param in nm_params + pn_params:
-                        param.grad /= (batch_size * len(query_set))
-                    self.meta_optimizer.step()
-                    self.meta_optimizer.zero_grad()
+                nm_params = [p for p in self.nm.parameters() if p.requires_grad]
+                pn_params = [p for p in self.pn.parameters() if p.requires_grad]
+                for param in nm_params + pn_params:
+                    param.grad /= len(query_set)
+                self.meta_optimizer.step()
+                self.meta_optimizer.zero_grad()
 
                 logger.info('Episode {}/{} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
                             'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
