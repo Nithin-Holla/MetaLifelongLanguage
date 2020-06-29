@@ -113,9 +113,9 @@ if __name__ == '__main__':
         accuracies = learner.testing(test_datasets, **vars(args))
 
         for j, acc in enumerate(accuracies):
-            run_dict['run_' + str(i) + '_acc_' + str(j)] = acc
+            run_dict['run_' + str(i+1) + '_acc_' + str(j+1)] = acc
 
-        run_dict['run_' + str(i) + '_avg_acc'] = np.mean(accuracies)
+        run_dict['run_' + str(i+1) + '_avg_acc'] = np.mean(accuracies)
 
         run_accuracies.append(np.mean(accuracies))
 
