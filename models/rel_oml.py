@@ -83,9 +83,6 @@ class OML:
         self.rln.load_state_dict(checkpoint['rln'])
         self.pln.load_state_dict(checkpoint['pln'])
 
-    def scale_tanh(self, tanh_value):
-        return 0.5 * (tanh_value + 1)
-
     def evaluate(self, dataloader, updates, mini_batch_size):
 
         self.rln.eval()
@@ -126,8 +123,7 @@ class OML:
                 else:
                     input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = self.rln(input_dict)
-                    tanh_score = fpln(repr)
-                    cosine_sim = self.scale_tanh(tanh_score)
+                    cosine_sim = torch.clamp(fpln(repr), 0, 1)
 
                 pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -165,8 +161,7 @@ class OML:
                     else:
                         input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                         repr = self.rln(input_dict)
-                        tanh_score = fpln(repr)
-                        cosine_sim = self.scale_tanh(tanh_score)
+                        cosine_sim = torch.clamp(fpln(repr), 0, 1)
 
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -236,8 +231,7 @@ class OML:
                     else:
                         input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                         repr = self.rln(input_dict)
-                        tanh_score = fpln(repr)
-                        cosine_sim = self.scale_tanh(tanh_score)
+                        cosine_sim = torch.clamp(fpln(repr), 0, 1)
 
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -289,8 +283,7 @@ class OML:
                     else:
                         input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                         repr = self.rln(input_dict)
-                        tanh_score = fpln(repr)
-                        cosine_sim = self.scale_tanh(tanh_score)
+                        cosine_sim = torch.clamp(fpln(repr), 0, 1)
 
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 

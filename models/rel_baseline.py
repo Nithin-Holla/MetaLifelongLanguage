@@ -61,9 +61,6 @@ class Baseline:
         self.rln.load_state_dict(checkpoint['rln'])
         self.pln.load_state_dict(checkpoint['pln'])
 
-    def scale_tanh(self, tanh_value):
-        return 0.5 * (tanh_value + 1)
-
     def train(self, dataloader, n_epochs, log_freq):
 
         self.rln.train()
@@ -91,8 +88,7 @@ class Baseline:
                 else:
                     input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = self.rln(input_dict)
-                    tanh_score = self.pln(repr)
-                    cosine_sim = self.scale_tanh(tanh_score)
+                    cosine_sim = torch.clamp(self.pln(repr), 0, 1)
 
                 pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -140,8 +136,7 @@ class Baseline:
                 else:
                     input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = self.rln(input_dict)
-                    tanh_score = self.pln(repr)
-                    cosine_sim = self.scale_tanh(tanh_score)
+                    cosine_sim = torch.clamp(self.pln(repr), 0, 1)
 
             pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
             all_predictions.extend(pred.tolist())
