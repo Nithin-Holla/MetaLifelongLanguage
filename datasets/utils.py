@@ -168,19 +168,14 @@ def replicate_rel_data(text, label, candidates):
     replicated_relations = []
     ranking_label = []
     for i in range(len(text)):
-        rand_idx = random.choice(range(len(candidates[i]) + 1))
-        j = 0
-        for k in range(len(candidates[i]) + 1):
+        replicated_text.append(text[i])
+        replicated_relations.append(label[i])
+        ranking_label.append(1)
+        for j in range(len(candidates[i])):
             replicated_text.append(text[i])
-            if k == rand_idx:
-                replicated_relations.append(label[i])
-                ranking_label.append(1)
-            else:
-                replicated_relations.append(candidates[i][j])
-                ranking_label.append(-1)
-                j += 1
-    relation_lengths = [len(cand) + 1 for cand in candidates]
-    return replicated_text, replicated_relations, ranking_label, relation_lengths
+            replicated_relations.append(candidates[i][j])
+            ranking_label.append(-1)
+    return replicated_text, replicated_relations, ranking_label
 
 
 def get_relation_index(data):

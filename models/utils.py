@@ -31,35 +31,32 @@ def make_prediction(output):
     return pred
 
 
-def make_rel_prediction(cosine_sim, ranking_label, relation_lengths):
+def make_rel_prediction(cosine_sim, ranking_label):
     pred = []
-    targets = []
-    start_idx = 0
     with torch.no_grad():
-        for rel_len in relation_lengths:
-            subset = cosine_sim[start_idx: start_idx + rel_len]
-            pos_idx = ranking_label[start_idx: start_idx + rel_len].index(1)
-            targets.append(pos_idx)
-            pred.append(torch.argmax(subset))
-            start_idx += rel_len
-
+        pos_idx = [i for i, lbl in enumerate(ranking_label) if lbl == 1]
+        if len(pos_idx) == 1:
+            pred.append(torch.argmax(cosine_sim))
+        else:
+            for i in range(len(pos_idx) - 1):
+                start_idx = pos_idx[i]
+                end_idx = pos_idx[i+1]
+                subset = cosine_sim[start_idx: end_idx]
+                pred.append(torch.argmax(subset))
     pred = torch.tensor(pred)
-    targets = torch.tensor(targets)
+    targets = torch.zeros_like(pred)
     return pred, targets
 
 
-def split_rel_scores(cosine_sim, ranking_label, relation_lengths):
+def split_rel_scores(cosine_sim, ranking_label):
     pos_scores, neg_scores = [], []
-    start_idx = 0
-
-    for rel_len in relation_lengths:
-        pos_idx = ranking_label[start_idx: start_idx + rel_len].index(1) + start_idx
-        for i in range(start_idx, start_idx + rel_len):
-            if ranking_label[i] == -1:
-                pos_scores.append(cosine_sim[pos_idx])
-                neg_scores.append(cosine_sim[i])
-        start_idx += rel_len
-
+    pos_index = 0
+    for i in range(len(ranking_label)):
+        if ranking_label[i] == 1:
+            pos_index = i
+        elif ranking_label[i] == -1:
+            pos_scores.append(cosine_sim[pos_index])
+            neg_scores.append(cosine_sim[i])
     pos_scores = torch.stack(pos_scores)
     neg_scores = torch.stack(neg_scores)
     return pos_scores, neg_scores
