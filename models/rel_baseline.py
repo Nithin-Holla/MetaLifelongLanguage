@@ -88,7 +88,7 @@ class Baseline:
                 else:
                     input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = self.rln(input_dict)
-                    cosine_sim = torch.clamp(self.pln(repr), 0, 1)
+                    cosine_sim = torch.sigmoid(self.pln(repr))
 
                 pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -136,7 +136,7 @@ class Baseline:
                 else:
                     input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = self.rln(input_dict)
-                    cosine_sim = torch.clamp(self.pln(repr), 0, 1)
+                    cosine_sim = torch.sigmoid(self.pln(repr))
 
             pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
             all_predictions.extend(pred.tolist())

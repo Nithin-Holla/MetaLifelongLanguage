@@ -123,7 +123,7 @@ class OML:
                 else:
                     input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = self.rln(input_dict)
-                    cosine_sim = torch.clamp(fpln(repr), 0, 1)
+                    cosine_sim = torch.sigmoid(fpln(repr))
 
                 pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -161,7 +161,7 @@ class OML:
                     else:
                         input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                         repr = self.rln(input_dict)
-                        cosine_sim = torch.clamp(fpln(repr), 0, 1)
+                        cosine_sim = torch.sigmoid(fpln(repr))
 
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -231,7 +231,7 @@ class OML:
                     else:
                         input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                         repr = self.rln(input_dict)
-                        cosine_sim = torch.clamp(fpln(repr), 0, 1)
+                        cosine_sim = torch.sigmoid(fpln(repr))
 
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -283,7 +283,7 @@ class OML:
                     else:
                         input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                         repr = self.rln(input_dict)
-                        cosine_sim = torch.clamp(fpln(repr), 0, 1)
+                        cosine_sim = torch.sigmoid(fpln(repr))
 
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
