@@ -311,7 +311,7 @@ class OML:
                             param.grad = meta_grad.detach()
 
                     # PLN meta gradients
-                    pln_params = [p for p in fpln.parameters(time=0) if p.requires_grad]
+                    pln_params = [p for p in fpln.parameters() if p.requires_grad]
                     meta_pln_grads = torch.autograd.grad(loss, pln_params)
                     pln_params = [p for p in self.pln.parameters() if p.requires_grad]
                     for param, meta_grad in zip(pln_params, meta_pln_grads):

@@ -227,7 +227,7 @@ class ANML:
                             param.grad = meta_grad.detach()
 
                     # PN meta gradients
-                    pn_params = [p for p in fpn.parameters(time=0) if p.requires_grad]
+                    pn_params = [p for p in fpn.parameters() if p.requires_grad]
                     meta_pn_grads = torch.autograd.grad(loss, pn_params)
                     pn_params = [p for p in self.pn.parameters() if p.requires_grad]
                     for param, meta_grad in zip(pn_params, meta_pn_grads):
