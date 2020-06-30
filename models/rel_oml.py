@@ -108,9 +108,7 @@ class OML:
             task_predictions, task_labels = [], []
             support_loss = []
             for text, label, candidates in support_set:
-                replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text,
-                                                                                                         label,
-                                                                                                         candidates)
+                replicated_text, replicated_relations, ranking_label, relation_lengths = datasets.utils.replicate_rel_data(text, label, candidates)
 
                 if self.model_type == 'lstm':
                     batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
@@ -129,11 +127,11 @@ class OML:
                     tanh_score = fpln(repr)
                     cosine_sim = self.scale_tanh(tanh_score)
 
-                pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
+                pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label, relation_lengths)
 
                 loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
                 diffopt.step(loss)
-                pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label, relation_lengths)
                 support_loss.append(loss.item())
                 task_predictions.extend(pred.tolist())
                 task_labels.extend(targets.tolist())
@@ -145,9 +143,8 @@ class OML:
             all_losses, all_predictions, all_labels = [], [], []
 
             for text, label, candidates in dataloader:
-                replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text,
-                                                                                                         label,
-                                                                                                         candidates)
+                replicated_text, replicated_relations, ranking_label, relation_lengths = datasets.utils.replicate_rel_data(text, label, candidates)
+
                 with torch.no_grad():
 
                     if self.model_type == 'lstm':
@@ -168,12 +165,12 @@ class OML:
                         tanh_score = fpln(repr)
                         cosine_sim = self.scale_tanh(tanh_score)
 
-                    pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
+                    pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label, relation_lengths)
 
                     loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
 
                 loss = loss.item()
-                pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label, relation_lengths)
                 all_losses.append(loss)
                 all_predictions.extend(pred.tolist())
                 all_labels.extend(targets.tolist())
@@ -219,9 +216,8 @@ class OML:
                 support_set = self.group_by_relation(support_set, mini_batch_size)
 
                 for text, label, candidates in support_set:
-                    replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text,
-                                                                                                             label,
-                                                                                                             candidates)
+                    replicated_text, replicated_relations, ranking_label, relation_lengths = datasets.utils.replicate_rel_data(text, label, candidates)
+
                     if self.model_type == 'lstm':
                         batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
                         batch_rel, batch_rel_len = datasets.utils.glove_vectorize(replicated_relations, self.glove)
@@ -239,11 +235,11 @@ class OML:
                         tanh_score = fpln(repr)
                         cosine_sim = self.scale_tanh(tanh_score)
 
-                    pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
+                    pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label, relation_lengths)
 
                     loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
                     diffopt.step(loss)
-                    pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                    pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label, relation_lengths)
                     support_loss.append(loss.item())
                     task_predictions.extend(pred.tolist())
                     task_labels.extend(targets.tolist())
@@ -271,9 +267,7 @@ class OML:
                     query_set.append((text, label, candidates))
 
                 for text, label, candidates in query_set:
-                    replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text,
-                                                                                                             label,
-                                                                                                             candidates)
+                    replicated_text, replicated_relations, ranking_label, relation_lengths = datasets.utils.replicate_rel_data(text, label, candidates)
 
                     if self.model_type == 'lstm':
                         batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
@@ -292,11 +286,11 @@ class OML:
                         tanh_score = fpln(repr)
                         cosine_sim = self.scale_tanh(tanh_score)
 
-                    pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
+                    pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label, relation_lengths)
 
                     loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
                     query_loss.append(loss.item())
-                    pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                    pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label, relation_lengths)
 
                     acc = models.utils.calculate_accuracy(pred.tolist(), targets.tolist())
                     query_acc.append(acc)
@@ -311,7 +305,7 @@ class OML:
                             param.grad = meta_grad.detach()
 
                     # PLN meta gradients
-                    pln_params = [p for p in fpln.parameters(time=0) if p.requires_grad]
+                    pln_params = [p for p in fpln.parameters() if p.requires_grad]
                     meta_pln_grads = torch.autograd.grad(loss, pln_params)
                     pln_params = [p for p in self.pln.parameters() if p.requires_grad]
                     for param, meta_grad in zip(pln_params, meta_pln_grads):
