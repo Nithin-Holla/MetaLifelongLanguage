@@ -7,6 +7,7 @@ import torch
 from torch import nn
 from torch.nn import init
 from torch.nn import functional as F
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from transformers import AlbertModel, AlbertTokenizer, BertTokenizer, BertModel
 
 
@@ -73,6 +74,25 @@ class TransformerRLN(nn.Module):
 
     def forward(self, inputs):
         _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
+        return out
+
+
+class LSTMRLN(nn.Module):
+
+    def __init__(self, input_size, hidden_size, device):
+        super(LSTMRLN, self).__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.lstm = nn.LSTM(input_size=self.input_size, hidden_size=self.hidden_size,
+                            num_layers=1, bidirectional=True, batch_first=True)
+        self.device = device
+        self.to(device)
+
+    def forward(self, input, input_len):
+        packed = pack_padded_sequence(input, input_len, batch_first=True, enforce_sorted=False)
+        hidden, _ = self.lstm(packed)
+        hidden, _ = pad_packed_sequence(hidden, batch_first=True)
+        out = hidden[range(hidden.shape[0]), input_len-1, :]
         return out
 
 
@@ -159,34 +179,65 @@ class PlasticTransformerClsModel(nn.Module):
             self.hebbian[lbl, :] = (1 - self.eta) * self.hebbian[lbl, :] + self.eta * mean_repr
 
 
+class RelationLSTMRLN(nn.Module):
+    def __init__(self, input_size, hidden_size, device):
+        super(RelationLSTMRLN, self).__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.sent_rln = LSTMRLN(input_size=input_size, hidden_size=hidden_size, device=device)
+        self.relation_rln = LSTMRLN(input_size=input_size, hidden_size=hidden_size, device=device)
+        self.device = device
+
+    def forward(self, sent_input, sent_len, rel_input, rel_len):
+        sent_out = self.sent_rln(sent_input, sent_len)
+        rel_out = self.relation_rln(rel_input, rel_len)
+        return sent_out, rel_out
+
+
+class RelationLinearPLN(nn.Module):
+
+    def __init__(self, in_dim, out_dim, device):
+        super(RelationLinearPLN, self).__init__()
+        self.sent_linear = LinearPLN(in_dim, out_dim, device)
+        self.relation_linear = LinearPLN(in_dim, out_dim, device)
+
+    def forward(self, sent_input, rel_input):
+        sent_out = self.sent_linear(sent_input)
+        rel_out = self.relation_linear(rel_input)
+        return sent_out, rel_out
+
+
 class ReplayMemory:
 
-    def __init__(self, write_prob):
+    def __init__(self, write_prob, tuple_size):
         self.buffer = []
         self.write_prob = write_prob
+        self.tuple_size = tuple_size
 
-    def write(self, text, label):
-        input_tuple = (text, label)
+    def write(self, input_tuple):
         if random.random() < self.write_prob:
             self.buffer.append(input_tuple)
 
     def read(self):
-        text, label = random.choice(self.buffer)
-        return text, label
+        return random.choice(self.buffer)
 
-    def write_batch(self, text, labels):
-        if isinstance(labels, torch.Tensor):
-            labels = labels.tolist()
-        for txt, lbl in zip(text, labels):
-            self.write(txt, lbl)
+    def write_batch(self, *elements):
+        element_list = []
+        for e in elements:
+            if isinstance(e, torch.Tensor):
+                element_list.append(e.tolist())
+            else:
+                element_list.append(e)
+        for write_tuple in zip(*element_list):
+            self.write(write_tuple)
 
     def read_batch(self, batch_size):
-        text, label = [], []
+        contents = [[] for _ in range(self.tuple_size)]
         for _ in range(batch_size):
-            txt, lbl = self.read()
-            text.append(txt)
-            label.append(lbl)
-        return text, label
+            read_tuple = self.read()
+            for i in range(len(read_tuple)):
+                contents[i].append(read_tuple[i])
+        return tuple(contents)
 
     def len(self):
         return len(self.buffer)
