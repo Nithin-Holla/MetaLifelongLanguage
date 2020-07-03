@@ -41,18 +41,14 @@ class AGEM:
         checkpoint = torch.load(model_path)
         self.model.load_state_dict(checkpoint)
 
-    def compute_proj_component(self, orig_grad, ref_grad):
-        flat_orig_grad = torch.cat([torch.flatten(x) for x in orig_grad])
-        flat_ref_grad = torch.cat([torch.flatten(x) for x in ref_grad])
-        proj_component = torch.dot(flat_orig_grad, flat_ref_grad) / torch.dot(flat_ref_grad, flat_ref_grad)
-        return proj_component
-
     def compute_grad(self, orig_grad, ref_grad):
         with torch.no_grad():
-            dot_product = sum([torch.sum(o * r).item() for (o, r) in zip(orig_grad, ref_grad)])
+            flat_orig_grad = torch.cat([torch.flatten(x) for x in orig_grad])
+            flat_ref_grad = torch.cat([torch.flatten(x) for x in ref_grad])
+            dot_product = torch.dot(flat_orig_grad, flat_ref_grad)
             if dot_product >= 0:
                 return orig_grad
-            proj_component = self.compute_proj_component(orig_grad, ref_grad)
+            proj_component = dot_product / torch.dot(flat_ref_grad, flat_ref_grad)
             modified_grad = [o - proj_component * r for (o, r) in zip(orig_grad, ref_grad)]
             return modified_grad
 
