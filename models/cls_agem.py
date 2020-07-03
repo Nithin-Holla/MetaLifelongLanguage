@@ -127,7 +127,7 @@ class AGEM:
 
     def training(self, train_datasets, **kwargs):
         n_epochs = kwargs.get('n_epochs', 1)
-        log_freq = kwargs.get('log_freq', 500)
+        log_freq = kwargs.get('log_freq', 50)
         mini_batch_size = kwargs.get('mini_batch_size')
         train_dataset = data.ConcatDataset(train_datasets)
         train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=False,
