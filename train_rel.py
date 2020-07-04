@@ -8,7 +8,6 @@ import torch
 import numpy as np
 
 import datasets.utils
-import models.utils
 from datasets.lifelong_fewrel_dataset import LifelongFewRelDataset
 from models.rel_baseline import Baseline
 from models.rel_oml import OML
@@ -36,6 +35,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, help='Random seed', default=42)
     parser.add_argument('--replay_rate', type=float, help='Replay rate from memory', default=0.01)
     parser.add_argument('--loss_margin', type=float, help='Loss margin for ranking loss', default=0.5)
+    parser.add_argument('--order', type=int, help='Number of task orders to run for', default=5)
+    parser.add_argument('--num_clusters', type=int, help='Number of clusters to take', default=10)
     args = parser.parse_args()
     logger.info('Using configuration: {}'.format(vars(args)))
 
@@ -78,20 +79,31 @@ if __name__ == '__main__':
         raise NotImplementedError
     logger.info('Using {} as learner'.format(learner.__class__.__name__))
 
-    # Generate continual learning training data
-    logger.info('Generating continual learning data')
-    num_clusters = 10
-    train_datasets = datasets.utils.prepare_rel_datasets(train_data, relation_names, relation_embeddings, num_clusters)
+    # Generate cluster
+    relation_index = datasets.utils.get_relation_index(train_data)
+    cluster_labels, relation_embeddings = datasets.utils.create_relation_clusters(args.num_clusters,
+                                                                                  relation_embeddings, relation_index)
+
+    # Validation dataset
     val_dataset = LifelongFewRelDataset(val_data, relation_names)
-    logger.info('Finished generating continual learning data')
 
-    # Training
-    logger.info('----------Training starts here----------')
-    learner.training(train_datasets, **vars(args))
+    # Run for different orders of the clusters
+    accuracies = []
+    for i in range(args.order):
+        # Generate continual learning training data
+        logger.info('Generating continual learning data')
+        train_datasets = datasets.utils.prepare_rel_datasets(train_data, relation_names, cluster_labels, args.num_clusters)
+        logger.info('Finished generating continual learning data')
 
-    # Testing
-    logger.info('----------Testing starts here----------')
-    learner.testing(val_dataset, **vars(args))
+        # Training
+        logger.info('----------Training starts here----------')
+        learner.training(train_datasets, **vars(args))
 
+        # Testing
+        logger.info('----------Testing starts here----------')
+        acc = learner.testing(val_dataset, **vars(args))
+        accuracies.append(acc)
+
+    logger.info('Average accuracy across runs: {}'.format(np.mean(accuracies)))
 
 

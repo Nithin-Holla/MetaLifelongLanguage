@@ -187,12 +187,8 @@ def get_relation_index(data):
     return relation_pool
 
 
-def prepare_rel_datasets(train_data, relation_names, relation_embeddings, num_clusters):
+def prepare_rel_datasets(train_data, relation_names, cluster_labels, num_clusters):
     train_datasets = []
-
-    relation_index = get_relation_index(train_data)
-
-    cluster_labels, relation_embeddings = create_relation_clusters(num_clusters, relation_embeddings, relation_index)
 
     shuffle_index = list(range(num_clusters))
     random.shuffle(shuffle_index)
