@@ -105,10 +105,10 @@ class OML:
                 targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                 loss = self.loss_fn(cosine_sim, targets)
                 diffopt.step(loss)
-                pred = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                pred, true_labels = models.utils.make_rel_prediction(cosine_sim, ranking_label)
                 support_loss.append(loss.item())
                 task_predictions.extend(pred.tolist())
-                task_labels.extend(targets.tolist())
+                task_labels.extend(true_labels.tolist())
 
             acc = models.utils.calculate_accuracy(task_predictions, task_labels)
 
@@ -133,10 +133,10 @@ class OML:
                     loss = self.loss_fn(cosine_sim, targets)
 
                 loss = loss.item()
-                pred = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                pred, true_labels = models.utils.make_rel_prediction(cosine_sim, ranking_label)
                 all_losses.append(loss)
                 all_predictions.extend(pred.tolist())
-                all_labels.extend(targets.tolist())
+                all_labels.extend(true_labels.tolist())
 
         acc = models.utils.calculate_accuracy(all_predictions, all_labels)
         logger.info('Test metrics: Loss = {:.4f}, accuracy = {:.4f}'.format(np.mean(all_losses), acc))
@@ -193,10 +193,10 @@ class OML:
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                     loss = self.loss_fn(cosine_sim, targets)
                     diffopt.step(loss)
-                    pred = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                    pred, true_labels = models.utils.make_rel_prediction(cosine_sim, ranking_label)
                     support_loss.append(loss.item())
                     task_predictions.extend(pred.tolist())
-                    task_labels.extend(targets.tolist())
+                    task_labels.extend(true_labels.tolist())
                     self.memory.write_batch(text, label, candidates)
 
                 acc = models.utils.calculate_accuracy(task_predictions, task_labels)
@@ -235,9 +235,9 @@ class OML:
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                     loss = self.loss_fn(cosine_sim, targets)
                     query_loss.append(loss.item())
-                    pred = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                    pred, true_labels = models.utils.make_rel_prediction(cosine_sim, ranking_label)
 
-                    acc = models.utils.calculate_accuracy(pred.tolist(), targets.tolist())
+                    acc = models.utils.calculate_accuracy(pred.tolist(), true_labels.tolist())
                     query_acc.append(acc)
 
                     # RLN meta gradients
