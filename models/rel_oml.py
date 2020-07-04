@@ -13,7 +13,7 @@ from transformers import AdamW
 
 import datasets.utils
 import models.utils
-from models.base_models import ReplayMemory, RelationLSTMRLN, RelationLinearPLN, TransformerRLN, LinearPLN
+from models.base_models import ReplayMemory, TransformerRLN, LinearPLN
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('OML-Log')
@@ -30,30 +30,16 @@ class OML:
         self.glove = glove
         self.model_type = kwargs.get('model')
 
-        if self.model_type == 'lstm':
-            self.rln = RelationLSTMRLN(input_size=300,
-                                       hidden_size=kwargs.get('hidden_size'),
-                                       device=device)
-            self.pln = RelationLinearPLN(in_dim=2 * kwargs.get('hidden_size'),
-                                         out_dim=kwargs.get('hidden_size') // 4,
-                                         device=device)
-            meta_params = [p for p in self.rln.parameters() if p.requires_grad] + \
-                          [p for p in self.pln.parameters() if p.requires_grad]
-            self.meta_optimizer = optim.Adam(meta_params, lr=self.meta_lr)
-        elif self.model_type == 'bert' or self.model_type == 'albert':
-            self.rln = TransformerRLN(model_name=self.model_type,
-                                      max_length=kwargs.get('max_length'),
-                                      device=device)
-            self.pln = LinearPLN(in_dim=768, out_dim=1, device=device)
-            meta_params = [p for p in self.rln.parameters() if p.requires_grad] + \
-                          [p for p in self.pln.parameters() if p.requires_grad]
-            self.meta_optimizer = AdamW(meta_params, lr=self.meta_lr)
-        else:
-            raise NotImplementedError
+        self.rln = TransformerRLN(model_name=self.model_type,
+                                  max_length=kwargs.get('max_length'),
+                                  device=device)
+        self.pln = LinearPLN(in_dim=768, out_dim=1, device=device)
+        meta_params = [p for p in self.rln.parameters() if p.requires_grad] + \
+                      [p for p in self.pln.parameters() if p.requires_grad]
+        self.meta_optimizer = AdamW(meta_params, lr=self.meta_lr)
 
         self.memory = ReplayMemory(write_prob=self.write_prob, tuple_size=3)
         self.loss_fn = nn.MarginRankingLoss(margin=kwargs.get('loss_margin'))
-        self.cos = nn.CosineSimilarity(dim=1)
 
         logger.info('Loaded {} as RLN'.format(self.rln.__class__.__name__))
         logger.info('Loaded {} as PLN'.format(self.pln.__class__.__name__))
@@ -109,21 +95,9 @@ class OML:
                                                                                                          label,
                                                                                                          candidates)
 
-                if self.model_type == 'lstm':
-                    batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
-                    batch_rel, batch_rel_len = datasets.utils.glove_vectorize(replicated_relations, self.glove)
-                    batch_x = batch_x.to(self.device)
-                    batch_x_len = batch_x_len.to(self.device)
-                    batch_rel = batch_rel.to(self.device)
-                    batch_rel_len = batch_rel_len.to(self.device)
-                    x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                    x_embed, rel_embed = fpln(x_embed, rel_embed)
-                    cosine_sim = self.cos(x_embed, rel_embed)
-
-                else:
-                    input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
-                    repr = self.rln(input_dict)
-                    cosine_sim = torch.tanh(fpln(repr))
+                input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
+                repr = self.rln(input_dict)
+                cosine_sim = torch.tanh(fpln(repr))
 
                 pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -146,22 +120,9 @@ class OML:
                                                                                                          candidates)
                 with torch.no_grad():
 
-                    if self.model_type == 'lstm':
-
-                        batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
-                        batch_rel, batch_rel_len = datasets.utils.glove_vectorize(replicated_relations, self.glove)
-                        batch_x = batch_x.to(self.device)
-                        batch_x_len = batch_x_len.to(self.device)
-                        batch_rel = batch_rel.to(self.device)
-                        batch_rel_len = batch_rel_len.to(self.device)
-                        x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                        x_embed, rel_embed = fpln(x_embed, rel_embed)
-                        cosine_sim = self.cos(x_embed, rel_embed)
-
-                    else:
-                        input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
-                        repr = self.rln(input_dict)
-                        cosine_sim = torch.tanh(fpln(repr))
+                    input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
+                    repr = self.rln(input_dict)
+                    cosine_sim = torch.tanh(fpln(repr))
 
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -217,21 +178,10 @@ class OML:
                     replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text,
                                                                                                              label,
                                                                                                              candidates)
-                    if self.model_type == 'lstm':
-                        batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
-                        batch_rel, batch_rel_len = datasets.utils.glove_vectorize(replicated_relations, self.glove)
-                        batch_x = batch_x.to(self.device)
-                        batch_x_len = batch_x_len.to(self.device)
-                        batch_rel = batch_rel.to(self.device)
-                        batch_rel_len = batch_rel_len.to(self.device)
-                        x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                        x_embed, rel_embed = fpln(x_embed, rel_embed)
-                        cosine_sim = self.cos(x_embed, rel_embed)
 
-                    else:
-                        input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
-                        repr = self.rln(input_dict)
-                        cosine_sim = torch.tanh(fpln(repr))
+                    input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
+                    repr = self.rln(input_dict)
+                    cosine_sim = torch.tanh(fpln(repr))
 
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
@@ -269,21 +219,9 @@ class OML:
                                                                                                              label,
                                                                                                              candidates)
 
-                    if self.model_type == 'lstm':
-                        batch_x, batch_x_len = datasets.utils.glove_vectorize(replicated_text, self.glove)
-                        batch_rel, batch_rel_len = datasets.utils.glove_vectorize(replicated_relations, self.glove)
-                        batch_x = batch_x.to(self.device)
-                        batch_x_len = batch_x_len.to(self.device)
-                        batch_rel = batch_rel.to(self.device)
-                        batch_rel_len = batch_rel_len.to(self.device)
-                        x_embed, rel_embed = self.rln(batch_x, batch_x_len, batch_rel, batch_rel_len)
-                        x_embed, rel_embed = fpln(x_embed, rel_embed)
-                        cosine_sim = self.cos(x_embed, rel_embed)
-
-                    else:
-                        input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
-                        repr = self.rln(input_dict)
-                        cosine_sim = torch.tanh(fpln(repr))
+                    input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
+                    repr = self.rln(input_dict)
+                    cosine_sim = torch.tanh(fpln(repr))
 
                     pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
 
