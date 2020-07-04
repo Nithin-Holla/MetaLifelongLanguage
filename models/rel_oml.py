@@ -97,15 +97,12 @@ class OML:
 
                 input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                 repr = self.rln(input_dict)
-                cosine_sim = fpln(repr)
-
-                # pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
-                #
-                # loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
+                output = fpln(repr)
                 targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
-                loss = self.loss_fn(cosine_sim, targets)
+                loss = self.loss_fn(output, targets)
+
                 diffopt.step(loss)
-                pred, true_labels = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                pred, true_labels = models.utils.make_rel_prediction(output, ranking_label)
                 support_loss.append(loss.item())
                 task_predictions.extend(pred.tolist())
                 task_labels.extend(true_labels.tolist())
@@ -124,16 +121,12 @@ class OML:
 
                     input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = self.rln(input_dict)
-                    cosine_sim = fpln(repr)
-
-                    # pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
-                    #
-                    # loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
+                    output = fpln(repr)
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
-                    loss = self.loss_fn(cosine_sim, targets)
+                    loss = self.loss_fn(output, targets)
 
                 loss = loss.item()
-                pred, true_labels = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                pred, true_labels = models.utils.make_rel_prediction(output, ranking_label)
                 all_losses.append(loss)
                 all_predictions.extend(pred.tolist())
                 all_labels.extend(true_labels.tolist())
@@ -185,15 +178,12 @@ class OML:
 
                     input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = self.rln(input_dict)
-                    cosine_sim = fpln(repr)
-
-                    # pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
-                    #
-                    # loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
+                    output = fpln(repr)
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
-                    loss = self.loss_fn(cosine_sim, targets)
+                    loss = self.loss_fn(output, targets)
+
                     diffopt.step(loss)
-                    pred, true_labels = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                    pred, true_labels = models.utils.make_rel_prediction(output, ranking_label)
                     support_loss.append(loss.item())
                     task_predictions.extend(pred.tolist())
                     task_labels.extend(true_labels.tolist())
@@ -227,15 +217,12 @@ class OML:
 
                     input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = self.rln(input_dict)
-                    cosine_sim = fpln(repr)
-
-                    # pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
-                    #
-                    # loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
+                    output = fpln(repr)
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
-                    loss = self.loss_fn(cosine_sim, targets)
+                    loss = self.loss_fn(output, targets)
+
                     query_loss.append(loss.item())
-                    pred, true_labels = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                    pred, true_labels = models.utils.make_rel_prediction(output, ranking_label)
 
                     acc = models.utils.calculate_accuracy(pred.tolist(), true_labels.tolist())
                     query_acc.append(acc)

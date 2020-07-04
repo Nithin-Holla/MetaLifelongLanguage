@@ -32,7 +32,7 @@ class Baseline:
 
         logger.info('Loaded {} as the model'.format(self.model.__class__.__name__))
 
-        self.loss_fn = nn.MarginRankingLoss(margin=kwargs.get('loss_margin'))
+        self.loss_fn = nn.BCEWithLogitsLoss()
         self.cos = nn.CosineSimilarity(dim=1)
 
     def save_model(self, model_path):
@@ -56,17 +56,15 @@ class Baseline:
                                                                                                          candidates)
 
                 input_dict = self.model.encode_text(list(zip(replicated_text, replicated_relations)))
-                repr = self.model(input_dict)
-                cosine_sim = torch.tanh(repr)
-
-                pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
-
-                loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
+                output = self.model(input_dict)
+                targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
+                loss = self.loss_fn(output, targets)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+
                 loss = loss.item()
-                pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+                pred, targets = models.utils.make_rel_prediction(output, ranking_label)
                 all_losses.append(loss)
                 all_predictions.extend(pred.tolist())
                 all_labels.extend(targets.tolist())
@@ -89,10 +87,9 @@ class Baseline:
 
             with torch.no_grad():
                 input_dict = self.model.encode_text(list(zip(replicated_text, replicated_relations)))
-                repr = self.model(input_dict)
-                cosine_sim = torch.tanh(repr)
+                output = self.model(input_dict)
 
-            pred, targets = models.utils.make_rel_prediction(cosine_sim, ranking_label)
+            pred, targets = models.utils.make_rel_prediction(output, ranking_label)
             all_predictions.extend(pred.tolist())
             all_labels.extend(targets.tolist())
 
