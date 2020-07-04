@@ -102,7 +102,7 @@ class OML:
                 # pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
                 #
                 # loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
-                targets = torch.tensor(ranking_label)
+                targets = torch.tensor(ranking_label).float().unsqueeze(1)
                 loss = self.loss_fn(cosine_sim, targets)
                 diffopt.step(loss)
                 pred = models.utils.make_rel_prediction(cosine_sim, ranking_label)
@@ -129,7 +129,7 @@ class OML:
                     # pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
                     #
                     # loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
-                    targets = torch.tensor(ranking_label)
+                    targets = torch.tensor(ranking_label).float().unsqueeze(1)
                     loss = self.loss_fn(cosine_sim, targets)
 
                 loss = loss.item()
@@ -190,7 +190,7 @@ class OML:
                     # pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
                     #
                     # loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
-                    targets = torch.tensor(ranking_label)
+                    targets = torch.tensor(ranking_label).float().unsqueeze(1)
                     loss = self.loss_fn(cosine_sim, targets)
                     diffopt.step(loss)
                     pred = models.utils.make_rel_prediction(cosine_sim, ranking_label)
@@ -232,7 +232,7 @@ class OML:
                     # pos_scores, neg_scores = models.utils.split_rel_scores(cosine_sim, ranking_label)
                     #
                     # loss = self.loss_fn(pos_scores, neg_scores, torch.ones(len(pos_scores), device=self.device))
-                    targets = torch.tensor(ranking_label)
+                    targets = torch.tensor(ranking_label).float().unsqueeze(1)
                     loss = self.loss_fn(cosine_sim, targets)
                     query_loss.append(loss.item())
                     pred = models.utils.make_rel_prediction(cosine_sim, ranking_label)
