@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, help='Name of the model', default='bert')
     parser.add_argument('--learner', type=str, help='Learner method', default='sequential')
     parser.add_argument('--n_episodes', type=int, help='Number of meta-training episodes', default=10000)
-    parser.add_argument('--mini_batch_size', type=int, help='Batch size of data points within an episode', default=32)
+    parser.add_argument('--mini_batch_size', type=int, help='Batch size of data points within an episode', default=8)
     parser.add_argument('--updates', type=int, help='Number of inner-loop updates', default=5)
     parser.add_argument('--write_prob', type=float, help='Write probability for buffer memory', default=1.0)
     parser.add_argument('--max_length', type=int, help='Maximum sequence length for the input', default=128)
