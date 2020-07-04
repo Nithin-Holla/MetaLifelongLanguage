@@ -90,6 +90,9 @@ if __name__ == '__main__':
     # Run for different orders of the clusters
     accuracies = []
     for i in range(args.order):
+
+        logger.info('Running order {}'.format(i + 1))
+
         # Generate continual learning training data
         logger.info('Generating continual learning data')
         train_datasets = datasets.utils.prepare_rel_datasets(train_data, relation_names, cluster_labels, args.num_clusters)
