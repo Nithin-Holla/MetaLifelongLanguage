@@ -174,7 +174,7 @@ def replicate_rel_data(text, label, candidates):
         for j in range(len(candidates[i])):
             replicated_text.append(text[i])
             replicated_relations.append(candidates[i][j])
-            ranking_label.append(-1)
+            ranking_label.append(0)
     return replicated_text, replicated_relations, ranking_label
 
 
