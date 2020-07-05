@@ -92,6 +92,10 @@ if __name__ == '__main__':
 
         logger.info('Running order {}'.format(i + 1))
 
+        # If the learner has a memory, reset it
+        if hasattr(learner, 'memory'):
+            learner.memory.reset_memory()
+
         # Generate continual learning training data
         logger.info('Generating continual learning data')
         train_datasets = datasets.utils.prepare_rel_datasets(train_data, relation_names, cluster_labels, args.num_clusters)

@@ -193,3 +193,6 @@ class ReplayMemory:
 
     def len(self):
         return len(self.buffer)
+
+    def reset_memory(self):
+        self.buffer = []
