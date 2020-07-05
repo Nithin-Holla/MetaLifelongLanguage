@@ -119,5 +119,5 @@ class Baseline:
         test_dataloader = data.DataLoader(test_dataset, batch_size=mini_batch_size, shuffle=False,
                                           collate_fn=datasets.utils.rel_encode)
         acc = self.evaluate(dataloader=test_dataloader)
-
         logger.info('Overall test metrics: Accuracy = {:.4f}'.format(acc))
+        return acc
