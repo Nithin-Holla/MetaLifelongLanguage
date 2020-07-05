@@ -2,6 +2,7 @@ import logging
 import os
 import random
 from argparse import ArgumentParser
+from datetime import datetime
 
 import torchtext
 import torch
@@ -66,19 +67,10 @@ if __name__ == '__main__':
     # Get relation embeddings for clustering
     relation_embeddings = datasets.utils.get_relation_embedding(relation_names, glove)
 
-    # Load the model
+    # Set the device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if args.learner == 'sequential':
-        learner = Baseline(device=device, training_mode='sequential', glove=glove, **vars(args))
-    elif args.learner == 'multi_task':
-        learner = Baseline(device=device, training_mode='multi_task', glove=glove, **vars(args))
-    elif args.learner == 'oml':
-        learner = OML(device=device, glove=glove, **vars(args))
-    else:
-        raise NotImplementedError
-    logger.info('Using {} as learner'.format(learner.__class__.__name__))
 
-    # Generate cluster
+    # Generate clusters
     relation_index = datasets.utils.get_relation_index(train_data)
     cluster_labels, relation_embeddings = datasets.utils.create_relation_clusters(args.num_clusters,
                                                                                   relation_embeddings, relation_index)
@@ -92,9 +84,16 @@ if __name__ == '__main__':
 
         logger.info('Running order {}'.format(i + 1))
 
-        # If the learner has a memory, reset it
-        if hasattr(learner, 'memory'):
-            learner.memory.reset_memory()
+        # Initialize the model
+        if args.learner == 'sequential':
+            learner = Baseline(device=device, training_mode='sequential', **vars(args))
+        elif args.learner == 'multi_task':
+            learner = Baseline(device=device, training_mode='multi_task', **vars(args))
+        elif args.learner == 'oml':
+            learner = OML(device=device, **vars(args))
+        else:
+            raise NotImplementedError
+        logger.info('Using {} as learner'.format(learner.__class__.__name__))
 
         # Generate continual learning training data
         logger.info('Generating continual learning data')
@@ -103,7 +102,12 @@ if __name__ == '__main__':
 
         # Training
         logger.info('----------Training starts here----------')
+        model_file_name = learner.__class__.__name__ + '-' + str(datetime.now()).replace(':', '-').replace(' ', '_') + '.pt'
+        model_dir = os.path.join(base_path, 'saved_models')
+        os.makedirs(model_dir, exist_ok=True)
         learner.training(train_datasets, **vars(args))
+        learner.save_model(os.path.join(model_dir, model_file_name))
+        logger.info('Saved the model with name {}'.format(model_file_name))
 
         # Testing
         logger.info('----------Testing starts here----------')

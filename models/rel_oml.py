@@ -21,13 +21,12 @@ logger = logging.getLogger('OML-Log')
 
 class OML:
 
-    def __init__(self, device, glove, **kwargs):
+    def __init__(self, device, **kwargs):
         self.inner_lr = kwargs.get('inner_lr')
         self.meta_lr = kwargs.get('meta_lr')
         self.write_prob = kwargs.get('write_prob')
         self.replay_rate = kwargs.get('replay_rate')
         self.device = device
-        self.glove = glove
         self.model_type = kwargs.get('model')
 
         self.rln = TransformerRLN(model_name=self.model_type,
