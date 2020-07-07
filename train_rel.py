@@ -1,3 +1,4 @@
+import gc
 import logging
 import os
 import random
@@ -112,6 +113,12 @@ if __name__ == '__main__':
         logger.info('----------Testing starts here----------')
         acc = learner.testing(val_dataset, **vars(args))
         accuracies.append(acc)
+
+        # Delete the model to free memory
+        del learner
+        gc.collect()
+        if device.type == 'cuda':
+            torch.cuda.empty_cache()
 
     logger.info('Average accuracy across runs: {}'.format(np.mean(accuracies)))
 
