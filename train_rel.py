@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     # Parse command line arguments
     parser = ArgumentParser()
-    parser.add_argument('--n_epochs', type=int, help='Number of epochs (only for baseline)', default=3)
+    parser.add_argument('--n_epochs', type=int, help='Number of epochs (only for baseline)', default=1)
     parser.add_argument('--lr', type=float, help='Learning rate (only for baseline)', default=3e-5)
     parser.add_argument('--inner_lr', type=float, help='Inner-loop learning rate', default=0.001)
     parser.add_argument('--meta_lr', type=float, help='Meta learning rate', default=3e-5)
@@ -34,7 +34,6 @@ if __name__ == '__main__':
     parser.add_argument('--max_length', type=int, help='Maximum sequence length for the input', default=128)
     parser.add_argument('--seed', type=int, help='Random seed', default=42)
     parser.add_argument('--replay_rate', type=float, help='Replay rate from memory', default=0.01)
-    parser.add_argument('--loss_margin', type=float, help='Loss margin for ranking loss', default=0.5)
     parser.add_argument('--order', type=int, help='Number of task orders to run for', default=5)
     parser.add_argument('--num_clusters', type=int, help='Number of clusters to take', default=10)
     args = parser.parse_args()
