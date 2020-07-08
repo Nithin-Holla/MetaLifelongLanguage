@@ -88,6 +88,29 @@ class LinearPLN(nn.Module):
         return out
 
 
+class TransformerNeuromodulator(nn.Module):
+
+    def __init__(self, model_name, device):
+        super(TransformerNeuromodulator, self).__init__()
+        self.device = device
+        if model_name == 'albert':
+            self.tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
+            self.encoder = AlbertModel.from_pretrained('albert-base-v2')
+        elif model_name == 'bert':
+            self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+            self.encoder = BertModel.from_pretrained('bert-base-uncased')
+        else:
+            raise NotImplementedError
+        self.encoder.requires_grad = False
+        self.linear = nn.Sequential(nn.Linear(768, 768), nn.Sigmoid())
+        self.to(self.device)
+
+    def forward(self, inputs, out_from='full'):
+        _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
+        out = self.linear(out)
+        return out
+
+
 class LinearPlastic(nn.Module):
 
     def __init__(self, in_dim, out_dim):
