@@ -97,7 +97,7 @@ class Baseline:
         if self.training_mode == 'sequential':
             for train_dataset in train_datasets:
                 logger.info('Training on {}'.format(train_dataset.__class__.__name__))
-                train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=True,
+                train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=False,
                                                    collate_fn=datasets.utils.batch_encode)
                 self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
         elif self.training_mode == 'multi_task':
