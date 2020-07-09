@@ -94,10 +94,8 @@ class TransformerNeuromodulator(nn.Module):
         super(TransformerNeuromodulator, self).__init__()
         self.device = device
         if model_name == 'albert':
-            self.tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
             self.encoder = AlbertModel.from_pretrained('albert-base-v2')
         elif model_name == 'bert':
-            self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
             self.encoder = BertModel.from_pretrained('bert-base-uncased')
         else:
             raise NotImplementedError
