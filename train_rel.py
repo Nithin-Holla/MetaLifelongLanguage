@@ -11,6 +11,7 @@ import numpy as np
 
 import datasets.utils
 from datasets.lifelong_fewrel_dataset import LifelongFewRelDataset
+from models.rel_agem import AGEM
 from models.rel_baseline import Baseline
 from models.rel_oml import OML
 
@@ -89,6 +90,8 @@ if __name__ == '__main__':
             learner = Baseline(device=device, training_mode='sequential', **vars(args))
         elif args.learner == 'multi_task':
             learner = Baseline(device=device, training_mode='multi_task', **vars(args))
+        elif args.learner == 'agem':
+            learner = AGEM(device=device, **vars(args))
         elif args.learner == 'oml':
             learner = OML(device=device, **vars(args))
         else:
