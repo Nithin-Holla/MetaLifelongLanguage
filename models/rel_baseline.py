@@ -21,9 +21,8 @@ class Baseline:
         self.lr = kwargs.get('lr', 3e-5)
         self.device = device
         self.training_mode = training_mode
-        self.model_type = kwargs.get('model')
 
-        self.model = TransformerClsModel(model_name=self.model_type,
+        self.model = TransformerClsModel(model_name=kwargs.get('model'),
                                          n_classes=1,
                                          max_length=kwargs.get('max_length'),
                                          device=device)
