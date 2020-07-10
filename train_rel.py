@@ -12,6 +12,7 @@ import numpy as np
 import datasets.utils
 from datasets.lifelong_fewrel_dataset import LifelongFewRelDataset
 from models.rel_agem import AGEM
+from models.rel_anml import ANML
 from models.rel_baseline import Baseline
 from models.rel_oml import OML
 
@@ -94,6 +95,8 @@ if __name__ == '__main__':
             learner = AGEM(device=device, **vars(args))
         elif args.learner == 'oml':
             learner = OML(device=device, **vars(args))
+        elif args.learner == 'anml':
+            learner = ANML(device=device, **vars(args))
         else:
             raise NotImplementedError
         logger.info('Using {} as learner'.format(learner.__class__.__name__))
