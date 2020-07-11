@@ -61,14 +61,14 @@ class ANML:
         return grouped_data_set
 
     def save_model(self, model_path):
-        checkpoint = {'rln': self.nm.state_dict(),
-                      'pln': self.pn.state_dict()}
+        checkpoint = {'nm': self.nm.state_dict(),
+                      'pn': self.pn.state_dict()}
         torch.save(checkpoint, model_path)
 
     def load_model(self, model_path):
         checkpoint = torch.load(model_path)
-        self.nm.load_state_dict(checkpoint['rln'])
-        self.pn.load_state_dict(checkpoint['pln'])
+        self.nm.load_state_dict(checkpoint['nm'])
+        self.pn.load_state_dict(checkpoint['pn'])
 
     def evaluate(self, dataloader, updates, mini_batch_size):
 

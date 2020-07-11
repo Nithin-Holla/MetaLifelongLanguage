@@ -100,7 +100,10 @@ class TransformerNeuromodulator(nn.Module):
         else:
             raise NotImplementedError
         self.encoder.requires_grad = False
-        self.linear = nn.Sequential(nn.Linear(768, 768), nn.Sigmoid())
+        self.linear = nn.Sequential(nn.Linear(768, 768),
+                                    nn.ReLU(),
+                                    nn.Linear(768, 768),
+                                    nn.Sigmoid())
         self.to(self.device)
 
     def forward(self, inputs, out_from='full'):
