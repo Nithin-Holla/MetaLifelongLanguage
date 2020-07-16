@@ -75,7 +75,7 @@ class AGEM:
                 orig_grad = torch.autograd.grad(loss, params)
 
                 mini_batch_size = len(label)
-                if (iter + 1) % int(1 / self.replay_rate) == 0:
+                if self.replay_rate != 0 and (iter + 1) % int(1 / self.replay_rate) == 0:
                     ref_text, ref_label, ref_candidates = self.memory.read_batch(batch_size=mini_batch_size)
                     replicated_ref_text, replicated_ref_relations, ref_ranking_label = datasets.utils.replicate_rel_data(ref_text, ref_label, ref_candidates)
                     ref_input_dict = self.model.encode_text(list(zip(replicated_ref_text, replicated_ref_relations)))

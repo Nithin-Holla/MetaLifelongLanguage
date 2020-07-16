@@ -71,7 +71,7 @@ class AGEM:
                 orig_grad = torch.autograd.grad(loss, params)
 
                 mini_batch_size = len(labels)
-                if (iter + 1) % int(1 / self.replay_rate) == 0:
+                if self.replay_rate != 0 and (iter + 1) % int(1 / self.replay_rate) == 0:
                     ref_text, ref_labels = self.memory.read_batch(batch_size=mini_batch_size)
                     ref_labels = torch.tensor(ref_labels).to(self.device)
                     ref_input_dict = self.model.encode_text(ref_text)
