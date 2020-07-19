@@ -69,6 +69,7 @@ class Replay:
                     ref_loss.backward()
                     self.optimizer.step()
 
+                loss = loss.item()
                 pred = models.utils.make_prediction(output.detach())
                 all_losses.append(loss)
                 all_predictions.extend(pred.tolist())

@@ -74,6 +74,7 @@ class Replay:
                     ref_loss.backward()
                     self.optimizer.step()
 
+                loss = loss.item()
                 pred, true_labels = models.utils.make_rel_prediction(output, ranking_label)
                 all_losses.append(loss)
                 all_predictions.extend(pred.tolist())
