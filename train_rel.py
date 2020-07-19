@@ -15,6 +15,7 @@ from models.rel_agem import AGEM
 from models.rel_anml import ANML
 from models.rel_baseline import Baseline
 from models.rel_oml import OML
+from models.rel_replay import Replay
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('ContinualLearningLog')
@@ -93,6 +94,8 @@ if __name__ == '__main__':
             learner = Baseline(device=device, training_mode='multi_task', **vars(args))
         elif args.learner == 'agem':
             learner = AGEM(device=device, **vars(args))
+        elif args.learner == 'replay':
+            learner = Replay(device=device, **vars(args))
         elif args.learner == 'oml':
             learner = OML(device=device, **vars(args))
         elif args.learner == 'anml':
