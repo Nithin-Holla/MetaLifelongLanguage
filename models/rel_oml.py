@@ -140,7 +140,7 @@ class OML:
         mini_batch_size = kwargs.get('mini_batch_size')
 
         if self.replay_rate != 0:
-            replay_freq = int((1 - self.replay_rate) / (self.replay_rate * (updates + 1)))
+            replay_freq = int(math.ceil((1 - self.replay_rate) / (self.replay_rate * (updates + 1))))
         else:
             replay_freq = 0
         logger.info('Replay frequency: {}'.format(replay_freq))
