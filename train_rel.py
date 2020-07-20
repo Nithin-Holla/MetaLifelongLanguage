@@ -14,6 +14,7 @@ from datasets.lifelong_fewrel_dataset import LifelongFewRelDataset
 from models.rel_agem import AGEM
 from models.rel_anml import ANML
 from models.rel_baseline import Baseline
+from models.rel_maml import MAML
 from models.rel_oml import OML
 from models.rel_replay import Replay
 
@@ -96,6 +97,8 @@ if __name__ == '__main__':
             learner = AGEM(device=device, **vars(args))
         elif args.learner == 'replay':
             learner = Replay(device=device, **vars(args))
+        elif args.learner == 'maml':
+            learner = MAML(device=device, **vars(args))
         elif args.learner == 'oml':
             learner = OML(device=device, **vars(args))
         elif args.learner == 'anml':
