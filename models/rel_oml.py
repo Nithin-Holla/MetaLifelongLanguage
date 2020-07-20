@@ -139,7 +139,11 @@ class OML:
         updates = kwargs.get('updates')
         mini_batch_size = kwargs.get('mini_batch_size')
 
-        replay_freq = int(max(1, math.ceil(1 / ((updates + 1) * self.replay_rate)))) if self.replay_rate != 0 else 0
+        if self.replay_rate != 0:
+            replay_freq = int((1 - self.replay_rate) / (self.replay_rate * (updates + 1)))
+        else:
+            replay_freq = 0
+        logger.info('Replay frequency: {}'.format(replay_freq))
 
         concat_dataset = data.ConcatDataset(train_datasets)
         train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=mini_batch_size, shuffle=False,
@@ -197,16 +201,17 @@ class OML:
                 # Outer loop
                 query_loss, query_acc = [], []
                 query_set = []
-                try:
-                    text, label, candidates = next(train_dataloader)
-                    query_set.append((text, label, candidates))
-                except StopIteration:
-                    logger.info('Terminating training as all the data is seen')
-                    return
 
                 if self.replay_rate != 0 and (episode_id + 1) % replay_freq == 0:
                     text, label, candidates = self.memory.read_batch(batch_size=mini_batch_size)
                     query_set.append((text, label, candidates))
+                else:
+                    try:
+                        text, label, candidates = next(train_dataloader)
+                        query_set.append((text, label, candidates))
+                    except StopIteration:
+                        logger.info('Terminating training as all the data is seen')
+                        return
 
                 for text, label, candidates in query_set:
                     replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text,
