@@ -13,7 +13,7 @@ from transformers import AdamW
 
 import datasets
 import models.utils
-from models.base_models import TransformerRLN, ReplayMemory, TransformerClsModel
+from models.base_models import ReplayMemory, TransformerClsModel, TransformerNeuromodulator
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('ANML-Log')
@@ -28,9 +28,8 @@ class ANML:
         self.replay_rate = kwargs.get('replay_rate')
         self.device = device
 
-        self.nm = TransformerRLN(model_name=kwargs.get('model'),
-                                 max_length=kwargs.get('max_length'),
-                                 device=device)
+        self.nm = TransformerNeuromodulator(model_name=kwargs.get('model'),
+                                            device=device)
         self.pn = TransformerClsModel(model_name=kwargs.get('model'),
                                       n_classes=n_classes,
                                       max_length=kwargs.get('max_length'),
@@ -58,9 +57,6 @@ class ANML:
                 subset = grouped_text[lbl][i: i + mini_batch_size]
                 grouped_data_set.append((subset, [lbl] * len(subset)))
         return grouped_data_set
-
-    def scaled_gating(self, tanh_value):
-        return 0.5 * (tanh_value + 1)
 
     def save_model(self, model_path):
         checkpoint = {'nm': self.nm.state_dict(),
@@ -93,8 +89,7 @@ class ANML:
                 labels = torch.tensor(labels).to(self.device)
                 input_dict = self.pn.encode_text(text)
                 repr = fpn(input_dict, out_from='transformers')
-                modulation_tanh = self.nm(input_dict)
-                modulation = self.scaled_gating(modulation_tanh)
+                modulation = self.nm(input_dict)
                 output = fpn(repr * modulation, out_from='linear')
                 loss = self.loss_fn(output, labels)
                 diffopt.step(loss)
@@ -115,8 +110,7 @@ class ANML:
                 input_dict = self.pn.encode_text(text)
                 with torch.no_grad():
                     repr = fpn(input_dict, out_from='transformers')
-                    modulation_tanh = self.nm(input_dict)
-                    modulation = self.scaled_gating(modulation_tanh)
+                    modulation = self.nm(input_dict)
                     output = fpn(repr * modulation, out_from='linear')
                     loss = self.loss_fn(output, labels)
                 loss = loss.item()
@@ -136,7 +130,7 @@ class ANML:
         updates = kwargs.get('updates')
         mini_batch_size = kwargs.get('mini_batch_size')
 
-        replay_freq = int(max(1, math.ceil(1 / ((updates + 1) * self.replay_rate))))
+        replay_freq = int(max(1, math.ceil(1 / ((updates + 1) * self.replay_rate)))) if self.replay_rate != 0 else 0
 
         concat_dataset = data.ConcatDataset(train_datasets)
         train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=mini_batch_size, shuffle=False,
@@ -169,8 +163,7 @@ class ANML:
                     labels = torch.tensor(labels).to(self.device)
                     input_dict = self.pn.encode_text(text)
                     repr = fpn(input_dict, out_from='transformers')
-                    modulation_tanh = self.nm(input_dict)
-                    modulation = self.scaled_gating(modulation_tanh)
+                    modulation = self.nm(input_dict)
                     output = fpn(repr * modulation, out_from='linear')
                     loss = self.loss_fn(output, labels)
                     diffopt.step(loss)
@@ -196,7 +189,7 @@ class ANML:
                     logger.info('Terminating training as all the data is seen')
                     return
 
-                if (episode_id + 1) % replay_freq == 0:
+                if self.replay_rate != 0 and (episode_id + 1) % replay_freq == 0:
                     text, labels = self.memory.read_batch(batch_size=mini_batch_size)
                     query_set.append((text, labels))
 
@@ -204,8 +197,7 @@ class ANML:
                     labels = torch.tensor(labels).to(self.device)
                     input_dict = self.pn.encode_text(text)
                     repr = fpn(input_dict, out_from='transformers')
-                    modulation_tanh = self.nm(input_dict)
-                    modulation = self.scaled_gating(modulation_tanh)
+                    modulation = self.nm(input_dict)
                     output = fpn(repr * modulation, out_from='linear')
                     loss = self.loss_fn(output, labels)
                     query_loss.append(loss.item())

@@ -9,9 +9,11 @@ import numpy as np
 import torch
 
 import datasets.utils
+from models.cls_agem import AGEM
 from models.cls_anml import ANML
 from models.cls_baseline import Baseline
 from models.cls_oml import OML
+from models.cls_replay import Replay
 from models.plastic_network import PlasticNetwork
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -74,6 +76,10 @@ if __name__ == '__main__':
         learner = Baseline(device=device, n_classes=n_classes, training_mode='sequential', **vars(args))
     elif args.learner == 'multi_task':
         learner = Baseline(device=device, n_classes=n_classes, training_mode='multi_task', **vars(args))
+    elif args.learner == 'agem':
+        learner = AGEM(device=device, n_classes=n_classes, **vars(args))
+    elif args.learner == 'replay':
+        learner = Replay(device=device, n_classes=n_classes, **vars(args))
     elif args.learner == 'oml':
         learner = OML(device=device, n_classes=n_classes, **vars(args))
     elif args.learner == 'anml':

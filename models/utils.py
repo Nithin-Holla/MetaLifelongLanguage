@@ -44,8 +44,8 @@ def make_rel_prediction(cosine_sim, ranking_label):
                 subset = cosine_sim[start_idx: end_idx]
                 pred.append(torch.argmax(subset))
     pred = torch.tensor(pred)
-    targets = torch.zeros_like(pred)
-    return pred, targets
+    true_labels = torch.zeros_like(pred)
+    return pred, true_labels
 
 
 def split_rel_scores(cosine_sim, ranking_label):

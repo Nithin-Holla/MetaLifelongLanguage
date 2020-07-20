@@ -9,23 +9,27 @@ from transformers import AdamW
 
 import datasets
 import models.utils
-from models.base_models import TransformerClsModel
+from models.base_models import TransformerClsModel, ReplayMemory
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('Baseline-Log')
+logger = logging.getLogger('Replay-Log')
 
 
-class Baseline:
+class Replay:
 
-    def __init__(self, device, n_classes, training_mode, **kwargs):
+    def __init__(self, device, n_classes, **kwargs):
         self.lr = kwargs.get('lr', 3e-5)
+        self.write_prob = kwargs.get('write_prob')
+        self.replay_rate = kwargs.get('replay_rate')
         self.device = device
-        self.training_mode = training_mode
+
         self.model = TransformerClsModel(model_name=kwargs.get('model'),
                                          n_classes=n_classes,
                                          max_length=kwargs.get('max_length'),
                                          device=device)
+        self.memory = ReplayMemory(write_prob=self.write_prob, tuple_size=2)
         logger.info('Loaded {} as model'.format(self.model.__class__.__name__))
+
         self.loss_fn = nn.CrossEntropyLoss()
         self.optimizer = AdamW([p for p in self.model.parameters() if p.requires_grad], lr=self.lr)
 
@@ -53,12 +57,25 @@ class Baseline:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+
+                mini_batch_size = len(labels)
+                if self.replay_rate != 0 and (iter + 1) % int(1 / self.replay_rate) == 0:
+                    ref_text, ref_labels = self.memory.read_batch(batch_size=mini_batch_size)
+                    ref_labels = torch.tensor(ref_labels).to(self.device)
+                    ref_input_dict = self.model.encode_text(ref_text)
+                    ref_output = self.model(ref_input_dict)
+                    ref_loss = self.loss_fn(ref_output, ref_labels)
+                    self.optimizer.zero_grad()
+                    ref_loss.backward()
+                    self.optimizer.step()
+
                 loss = loss.item()
                 pred = models.utils.make_prediction(output.detach())
                 all_losses.append(loss)
                 all_predictions.extend(pred.tolist())
                 all_labels.extend(labels.tolist())
                 iter += 1
+                self.memory.write_batch(text, labels)
 
                 if iter % log_freq == 0:
                     acc, prec, rec, f1 = models.utils.calculate_metrics(all_predictions, all_labels)
@@ -92,22 +109,12 @@ class Baseline:
 
     def training(self, train_datasets, **kwargs):
         n_epochs = kwargs.get('n_epochs', 1)
-        log_freq = kwargs.get('log_freq', 500)
+        log_freq = kwargs.get('log_freq', 50)
         mini_batch_size = kwargs.get('mini_batch_size')
-        if self.training_mode == 'sequential':
-            for train_dataset in train_datasets:
-                logger.info('Training on {}'.format(train_dataset.__class__.__name__))
-                train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=False,
-                                                   collate_fn=datasets.utils.batch_encode)
-                self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
-        elif self.training_mode == 'multi_task':
-            train_dataset = data.ConcatDataset(train_datasets)
-            logger.info('Training multi-task model on all datasets')
-            train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=True,
-                                               collate_fn=datasets.utils.batch_encode)
-            self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
-        else:
-            raise ValueError('Invalid training mode')
+        train_dataset = data.ConcatDataset(train_datasets)
+        train_dataloader = data.DataLoader(train_dataset, batch_size=mini_batch_size, shuffle=False,
+                                           collate_fn=datasets.utils.batch_encode)
+        self.train(dataloader=train_dataloader, n_epochs=n_epochs, log_freq=log_freq)
 
     def testing(self, test_datasets, **kwargs):
         mini_batch_size = kwargs.get('mini_batch_size')

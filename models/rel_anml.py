@@ -13,13 +13,13 @@ from transformers import AdamW
 
 import datasets.utils
 import models.utils
-from models.base_models import ReplayMemory, TransformerRLN, LinearPLN
+from models.base_models import ReplayMemory, TransformerNeuromodulator, TransformerClsModel
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('OML-Log')
+logger = logging.getLogger('ANML-Log')
 
 
-class OML:
+class ANML:
 
     def __init__(self, device, **kwargs):
         self.inner_lr = kwargs.get('inner_lr')
@@ -28,21 +28,24 @@ class OML:
         self.replay_rate = kwargs.get('replay_rate')
         self.device = device
 
-        self.rln = TransformerRLN(model_name=kwargs.get('model'),
-                                  max_length=kwargs.get('max_length'),
-                                  device=device)
-        self.pln = LinearPLN(in_dim=768, out_dim=1, device=device)
-        meta_params = [p for p in self.rln.parameters() if p.requires_grad] + \
-                      [p for p in self.pln.parameters() if p.requires_grad]
+        self.nm = TransformerNeuromodulator(model_name=kwargs.get('model'),
+                                            device=device)
+        self.pn = TransformerClsModel(model_name=kwargs.get('model'),
+                                      n_classes=1,
+                                      max_length=kwargs.get('max_length'),
+                                      device=device)
+
+        logger.info('Loaded {} as NM'.format(self.nm.__class__.__name__))
+        logger.info('Loaded {} as PN'.format(self.pn.__class__.__name__))
+
+        meta_params = [p for p in self.nm.parameters() if p.requires_grad] + \
+                      [p for p in self.pn.parameters() if p.requires_grad]
         self.meta_optimizer = AdamW(meta_params, lr=self.meta_lr)
 
         self.memory = ReplayMemory(write_prob=self.write_prob, tuple_size=3)
         self.loss_fn = nn.BCEWithLogitsLoss()
 
-        logger.info('Loaded {} as RLN'.format(self.rln.__class__.__name__))
-        logger.info('Loaded {} as PLN'.format(self.pln.__class__.__name__))
-
-        inner_params = [p for p in self.pln.parameters() if p.requires_grad]
+        inner_params = [p for p in self.pn.parameters() if p.requires_grad]
         self.inner_optimizer = optim.SGD(inner_params, lr=self.inner_lr)
 
     def group_by_relation(self, data_set, mini_batch_size):
@@ -58,19 +61,19 @@ class OML:
         return grouped_data_set
 
     def save_model(self, model_path):
-        checkpoint = {'rln': self.rln.state_dict(),
-                      'pln': self.pln.state_dict()}
+        checkpoint = {'nm': self.nm.state_dict(),
+                      'pn': self.pn.state_dict()}
         torch.save(checkpoint, model_path)
 
     def load_model(self, model_path):
         checkpoint = torch.load(model_path)
-        self.rln.load_state_dict(checkpoint['rln'])
-        self.pln.load_state_dict(checkpoint['pln'])
+        self.nm.load_state_dict(checkpoint['nm'])
+        self.pn.load_state_dict(checkpoint['pn'])
 
     def evaluate(self, dataloader, updates, mini_batch_size):
 
-        self.rln.eval()
-        self.pln.train()
+        self.nm.eval()
+        self.pn.train()
 
         support_set = defaultdict(list)
         for _ in range(updates):
@@ -81,9 +84,9 @@ class OML:
 
         support_set = self.group_by_relation(support_set, mini_batch_size)
 
-        with higher.innerloop_ctx(self.pln, self.inner_optimizer,
+        with higher.innerloop_ctx(self.pn, self.inner_optimizer,
                                   copy_initial_weights=False,
-                                  track_higher_grads=False) as (fpln, diffopt):
+                                  track_higher_grads=False) as (fpn, diffopt):
 
             # Inner loop
             task_predictions, task_labels = [], []
@@ -93,9 +96,10 @@ class OML:
                                                                                                          label,
                                                                                                          candidates)
 
-                input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
-                repr = self.rln(input_dict)
-                output = fpln(repr)
+                input_dict = self.pn.encode_text(list(zip(replicated_text, replicated_relations)))
+                repr = fpn(input_dict, out_from='transformers')
+                modulation = self.nm(input_dict)
+                output = fpn(repr * modulation, out_from='linear')
                 targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                 loss = self.loss_fn(output, targets)
 
@@ -117,9 +121,10 @@ class OML:
                                                                                                          candidates)
                 with torch.no_grad():
 
-                    input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
-                    repr = self.rln(input_dict)
-                    output = fpln(repr)
+                    input_dict = self.pn.encode_text(list(zip(replicated_text, replicated_relations)))
+                    repr = fpn(input_dict, out_from='transformers')
+                    modulation = self.nm(input_dict)
+                    output = fpn(repr * modulation, out_from='linear')
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                     loss = self.loss_fn(output, targets)
 
@@ -150,9 +155,9 @@ class OML:
             self.inner_optimizer.zero_grad()
             support_loss, support_acc = [], []
 
-            with higher.innerloop_ctx(self.pln, self.inner_optimizer,
+            with higher.innerloop_ctx(self.pn, self.inner_optimizer,
                                       copy_initial_weights=False,
-                                      track_higher_grads=False) as (fpln, diffopt):
+                                      track_higher_grads=False) as (fpn, diffopt):
 
                 # Inner loop
                 support_set = defaultdict(list)
@@ -174,9 +179,10 @@ class OML:
                                                                                                              label,
                                                                                                              candidates)
 
-                    input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
-                    repr = self.rln(input_dict)
-                    output = fpln(repr)
+                    input_dict = self.pn.encode_text(list(zip(replicated_text, replicated_relations)))
+                    repr = fpn(input_dict, out_from='transformers')
+                    modulation = self.nm(input_dict)
+                    output = fpn(repr * modulation, out_from='linear')
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                     loss = self.loss_fn(output, targets)
 
@@ -213,9 +219,10 @@ class OML:
                                                                                                              label,
                                                                                                              candidates)
 
-                    input_dict = self.rln.encode_text(list(zip(replicated_text, replicated_relations)))
-                    repr = self.rln(input_dict)
-                    output = fpln(repr)
+                    input_dict = self.pn.encode_text(list(zip(replicated_text, replicated_relations)))
+                    repr = fpn(input_dict, out_from='transformers')
+                    modulation = self.nm(input_dict)
+                    output = fpn(repr * modulation, out_from='linear')
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                     loss = self.loss_fn(output, targets)
 
@@ -225,29 +232,29 @@ class OML:
                     acc = models.utils.calculate_accuracy(pred.tolist(), true_labels.tolist())
                     query_acc.append(acc)
 
-                    # RLN meta gradients
-                    rln_params = [p for p in self.rln.parameters() if p.requires_grad]
-                    meta_rln_grads = torch.autograd.grad(loss, rln_params, retain_graph=True)
-                    for param, meta_grad in zip(rln_params, meta_rln_grads):
+                    # NM meta gradients
+                    nm_params = [p for p in self.nm.parameters() if p.requires_grad]
+                    meta_nm_grads = torch.autograd.grad(loss, nm_params, retain_graph=True)
+                    for param, meta_grad in zip(nm_params, meta_nm_grads):
                         if param.grad is not None:
                             param.grad += meta_grad.detach()
                         else:
                             param.grad = meta_grad.detach()
 
-                    # PLN meta gradients
-                    pln_params = [p for p in fpln.parameters() if p.requires_grad]
-                    meta_pln_grads = torch.autograd.grad(loss, pln_params)
-                    pln_params = [p for p in self.pln.parameters() if p.requires_grad]
-                    for param, meta_grad in zip(pln_params, meta_pln_grads):
+                    # PN meta gradients
+                    pn_params = [p for p in fpn.parameters() if p.requires_grad]
+                    meta_pn_grads = torch.autograd.grad(loss, pn_params)
+                    pn_params = [p for p in self.pn.parameters() if p.requires_grad]
+                    for param, meta_grad in zip(pn_params, meta_pn_grads):
                         if param.grad is not None:
                             param.grad += meta_grad.detach()
                         else:
                             param.grad = meta_grad.detach()
 
                 # Meta optimizer step
-                rln_params = [p for p in self.rln.parameters() if p.requires_grad]
-                pln_params = [p for p in self.pln.parameters() if p.requires_grad]
-                for param in rln_params + pln_params:
+                nm_params = [p for p in self.nm.parameters() if p.requires_grad]
+                pn_params = [p for p in self.pn.parameters() if p.requires_grad]
+                for param in nm_params + pn_params:
                     param.grad /= len(query_set)
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()
