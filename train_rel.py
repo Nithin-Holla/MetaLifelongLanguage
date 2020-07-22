@@ -41,6 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--replay_rate', type=float, help='Replay rate from memory', default=0.01)
     parser.add_argument('--order', type=int, help='Number of task orders to run for', default=5)
     parser.add_argument('--num_clusters', type=int, help='Number of clusters to take', default=10)
+    parser.add_argument('--replay_every', type=int, help='Number of data points between replay', default=1600)
     args = parser.parse_args()
     logger.info('Using configuration: {}'.format(vars(args)))
 
