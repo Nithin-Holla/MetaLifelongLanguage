@@ -21,6 +21,7 @@ class AGEM:
         self.lr = kwargs.get('lr', 3e-5)
         self.write_prob = kwargs.get('write_prob')
         self.replay_rate = kwargs.get('replay_rate')
+        self.replay_every = kwargs.get('replay_every')
         self.device = device
 
         self.model = TransformerClsModel(model_name=kwargs.get('model'),
@@ -71,14 +72,23 @@ class AGEM:
                 orig_grad = torch.autograd.grad(loss, params)
 
                 mini_batch_size = len(labels)
-                if self.replay_rate != 0 and (iter + 1) % int(1 / self.replay_rate) == 0:
-                    ref_text, ref_labels = self.memory.read_batch(batch_size=mini_batch_size)
-                    ref_labels = torch.tensor(ref_labels).to(self.device)
-                    ref_input_dict = self.model.encode_text(ref_text)
-                    ref_output = self.model(ref_input_dict)
-                    ref_loss = self.loss_fn(ref_output, ref_labels)
-                    ref_grad = torch.autograd.grad(ref_loss, params)
-                    final_grad = self.compute_grad(orig_grad, ref_grad)
+                replay_freq = self.replay_every // mini_batch_size
+                replay_steps = int(self.replay_every * self.replay_rate / mini_batch_size)
+
+                if self.replay_rate != 0 and (iter + 1) % replay_freq == 0:
+                    ref_grad_sum = None
+                    for _ in range(replay_steps):
+                        ref_text, ref_labels = self.memory.read_batch(batch_size=mini_batch_size)
+                        ref_labels = torch.tensor(ref_labels).to(self.device)
+                        ref_input_dict = self.model.encode_text(ref_text)
+                        ref_output = self.model(ref_input_dict)
+                        ref_loss = self.loss_fn(ref_output, ref_labels)
+                        ref_grad = torch.autograd.grad(ref_loss, params)
+                        if ref_grad_sum is None:
+                            ref_grad_sum = ref_grad
+                        else:
+                            ref_grad_sum = [x + y for (x, y) in zip(ref_grad, ref_grad_sum)]
+                    final_grad = self.compute_grad(orig_grad, ref_grad_sum)
                 else:
                     final_grad = orig_grad
 

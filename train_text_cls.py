@@ -47,6 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_length', type=int, help='Maximum sequence length for the input', default=128)
     parser.add_argument('--seed', type=int, help='Random seed', default=42)
     parser.add_argument('--replay_rate', type=float, help='Replay rate from memory', default=0.01)
+    parser.add_argument('--replay_every', type=int, help='Number of data points between replay', default=9600)
     args = parser.parse_args()
     logger.info('Using configuration: {}'.format(vars(args)))
 
