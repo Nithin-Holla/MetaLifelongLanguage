@@ -208,7 +208,7 @@ class OML:
                 query_set = []
 
                 if self.replay_rate != 0 and (episode_id + 1) % replay_freq == 0:
-                    for _ in range(replay_freq):
+                    for _ in range(replay_steps):
                         text, label, candidates = self.memory.read_batch(batch_size=mini_batch_size)
                         query_set.append((text, label, candidates))
                 else:
