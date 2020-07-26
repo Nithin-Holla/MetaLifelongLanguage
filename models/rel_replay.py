@@ -75,8 +75,11 @@ class Replay:
                         ref_input_dict = self.model.encode_text(list(zip(replicated_ref_text, replicated_ref_relations)))
                         ref_output = self.model(ref_input_dict)
                         ref_targets = torch.tensor(ref_ranking_label).float().unsqueeze(1).to(self.device)
-                        ref_loss = 1/replay_steps * self.loss_fn(ref_output, ref_targets)
+                        ref_loss = self.loss_fn(ref_output, ref_targets)
                         ref_loss.backward()
+
+                    params = [p for p in self.model.paramters() if p.requires_grad]
+                    torch.nn.utils.clip_grad_norm(params, 20)
                     self.optimizer.step()
 
                 loss = loss.item()
