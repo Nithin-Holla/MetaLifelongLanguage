@@ -74,7 +74,7 @@ class Replay:
                         ref_loss.backward()
 
                     params = [p for p in self.model.paramters() if p.requires_grad]
-                    torch.nn.utils.clip_grad_norm(params, 20)
+                    torch.nn.utils.clip_grad_norm(params, 10)
                     self.optimizer.step()
 
                 loss = loss.item()
