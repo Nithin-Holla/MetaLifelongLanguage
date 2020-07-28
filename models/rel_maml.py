@@ -26,6 +26,7 @@ class MAML:
         self.meta_lr = kwargs.get('meta_lr')
         self.write_prob = kwargs.get('write_prob')
         self.replay_rate = kwargs.get('replay_rate')
+        self.replay_every = kwargs.get('replay_every')
         self.device = device
 
         self.pn = TransformerClsModel(model_name=kwargs.get('model'),
@@ -134,10 +135,14 @@ class MAML:
         mini_batch_size = kwargs.get('mini_batch_size')
 
         if self.replay_rate != 0:
-            replay_freq = int(math.ceil((1 - self.replay_rate) / (self.replay_rate * (updates + 1))))
+            replay_batch_freq = self.replay_every // mini_batch_size
+            replay_freq = int(math.ceil((replay_batch_freq + 1) / (updates + 1)))
+            replay_steps = int(self.replay_every * self.replay_rate / mini_batch_size)
         else:
             replay_freq = 0
+            replay_steps = 0
         logger.info('Replay frequency: {}'.format(replay_freq))
+        logger.info('Replay steps: {}'.format(replay_steps))
 
         concat_dataset = data.ConcatDataset(train_datasets)
         train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=mini_batch_size, shuffle=False,
@@ -196,8 +201,9 @@ class MAML:
                 query_set = []
 
                 if self.replay_rate != 0 and (episode_id + 1) % replay_freq == 0:
-                    text, label, candidates = self.memory.read_batch(batch_size=mini_batch_size)
-                    query_set.append((text, label, candidates))
+                    for _ in range(replay_steps):
+                        text, label, candidates = self.memory.read_batch(batch_size=mini_batch_size)
+                        query_set.append((text, label, candidates))
                 else:
                     try:
                         text, label, candidates = next(train_dataloader)
@@ -233,9 +239,9 @@ class MAML:
                             param.grad = meta_grad.detach()
 
                 # Meta optimizer step
-                pn_params = [p for p in self.pn.parameters() if p.requires_grad]
-                for param in pn_params:
-                    param.grad /= len(query_set)
+                # pn_params = [p for p in self.pn.parameters() if p.requires_grad]
+                # for param in pn_params:
+                #     param.grad /= len(query_set)
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()
 
