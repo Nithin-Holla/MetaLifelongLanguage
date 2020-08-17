@@ -26,6 +26,7 @@ class ANML:
         self.meta_lr = kwargs.get('meta_lr')
         self.write_prob = kwargs.get('write_prob')
         self.replay_rate = kwargs.get('replay_rate')
+        self.replay_every = kwargs.get('replay_every')
         self.device = device
 
         self.nm = TransformerNeuromodulator(model_name=kwargs.get('model'),
@@ -130,7 +131,15 @@ class ANML:
         updates = kwargs.get('updates')
         mini_batch_size = kwargs.get('mini_batch_size')
 
-        replay_freq = int(max(1, math.ceil(1 / ((updates + 1) * self.replay_rate)))) if self.replay_rate != 0 else 0
+        if self.replay_rate != 0:
+            replay_batch_freq = self.replay_every // mini_batch_size
+            replay_freq = int(math.ceil((replay_batch_freq + 1) / (updates + 1)))
+            replay_steps = int(self.replay_every * self.replay_rate / mini_batch_size)
+        else:
+            replay_freq = 0
+            replay_steps = 0
+        logger.info('Replay frequency: {}'.format(replay_freq))
+        logger.info('Replay steps: {}'.format(replay_steps))
 
         concat_dataset = data.ConcatDataset(train_datasets)
         train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=mini_batch_size, shuffle=False,
@@ -182,16 +191,18 @@ class ANML:
                 # Outer loop
                 query_loss, query_acc, query_prec, query_rec, query_f1 = [], [], [], [], []
                 query_set = []
-                try:
-                    text, labels = next(train_dataloader)
-                    query_set.append((text, labels))
-                except StopIteration:
-                    logger.info('Terminating training as all the data is seen')
-                    return
 
                 if self.replay_rate != 0 and (episode_id + 1) % replay_freq == 0:
-                    text, labels = self.memory.read_batch(batch_size=mini_batch_size)
-                    query_set.append((text, labels))
+                    for _ in range(replay_steps):
+                        text, labels = self.memory.read_batch(batch_size=mini_batch_size)
+                        query_set.append((text, labels))
+                else:
+                    try:
+                        text, labels = next(train_dataloader)
+                        query_set.append((text, labels))
+                    except StopIteration:
+                        logger.info('Terminating training as all the data is seen')
+                        return
 
                 for text, labels in query_set:
                     labels = torch.tensor(labels).to(self.device)
@@ -229,10 +240,10 @@ class ANML:
                             param.grad = meta_grad.detach()
 
                 # Meta optimizer step
-                nm_params = [p for p in self.nm.parameters() if p.requires_grad]
-                pn_params = [p for p in self.pn.parameters() if p.requires_grad]
-                for param in nm_params + pn_params:
-                    param.grad /= len(query_set)
+                # nm_params = [p for p in self.nm.parameters() if p.requires_grad]
+                # pn_params = [p for p in self.pn.parameters() if p.requires_grad]
+                # for param in nm_params + pn_params:
+                #     param.grad /= len(query_set)
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()
 

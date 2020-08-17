@@ -37,7 +37,7 @@ class AGNewsDataset(data.Dataset):
         self.data = pd.read_csv(file_path, header=None, sep=',', names=['labels', 'title', 'description'],
                                 index_col=False)
         self.data.dropna(inplace=True)
-        self.data['text'] = self.data['title'] + self.data['description']
+        self.data['text'] = self.data['title'] + '. ' + self.data['description']
         self.data['labels'] = self.data['labels'] - 1
         self.data.drop(columns=['title', 'description'], inplace=True)
         self.data['text'] = self.data['text'].apply(preprocess)
@@ -63,7 +63,7 @@ class DBPediaDataset(data.Dataset):
         self.data = pd.read_csv(file_path, header=None, sep=',', names=['labels', 'title', 'description'],
                                 index_col=False)
         self.data.dropna(inplace=True)
-        self.data['text'] = self.data['title'] + self.data['description']
+        self.data['text'] = self.data['title'] + '. ' + self.data['description']
         self.data['labels'] = self.data['labels'] - 1
         self.data.drop(columns=['title', 'description'], inplace=True)
         self.data['text'] = self.data['text'].apply(preprocess)
@@ -89,7 +89,7 @@ class AmazonDataset(data.Dataset):
         self.data = pd.read_csv(file_path, header=None, sep=',', names=['labels', 'title', 'description'],
                                 index_col=False)
         self.data.dropna(inplace=True)
-        self.data['text'] = self.data['title'] + self.data['description']
+        self.data['text'] = self.data['title'] + '. ' + self.data['description']
         self.data['labels'] = self.data['labels'] - 1
         self.data.drop(columns=['title', 'description'], inplace=True)
         self.data['text'] = self.data['text'].apply(preprocess)

@@ -21,6 +21,7 @@ class Replay:
         self.lr = kwargs.get('lr', 3e-5)
         self.write_prob = kwargs.get('write_prob')
         self.replay_rate = kwargs.get('replay_rate')
+        self.replay_every = kwargs.get('replay_every')
         self.device = device
 
         self.model = TransformerClsModel(model_name=kwargs.get('model'),
@@ -63,15 +64,22 @@ class Replay:
                 self.optimizer.step()
 
                 mini_batch_size = len(label)
-                if self.replay_rate != 0 and (iter + 1) % int(1 / self.replay_rate) == 0:
-                    ref_text, ref_label, ref_candidates = self.memory.read_batch(batch_size=mini_batch_size)
-                    replicated_ref_text, replicated_ref_relations, ref_ranking_label = datasets.utils.replicate_rel_data(ref_text, ref_label, ref_candidates)
-                    ref_input_dict = self.model.encode_text(list(zip(replicated_ref_text, replicated_ref_relations)))
-                    ref_output = self.model(ref_input_dict)
-                    ref_targets = torch.tensor(ref_ranking_label).float().unsqueeze(1).to(self.device)
-                    ref_loss = self.loss_fn(ref_output, ref_targets)
+                replay_freq = self.replay_every // mini_batch_size
+                replay_steps = int(self.replay_every * self.replay_rate / mini_batch_size)
+
+                if self.replay_rate != 0 and (iter + 1) % replay_freq == 0:
                     self.optimizer.zero_grad()
-                    ref_loss.backward()
+                    for _ in range(replay_steps):
+                        ref_text, ref_label, ref_candidates = self.memory.read_batch(batch_size=mini_batch_size)
+                        replicated_ref_text, replicated_ref_relations, ref_ranking_label = datasets.utils.replicate_rel_data(ref_text, ref_label, ref_candidates)
+                        ref_input_dict = self.model.encode_text(list(zip(replicated_ref_text, replicated_ref_relations)))
+                        ref_output = self.model(ref_input_dict)
+                        ref_targets = torch.tensor(ref_ranking_label).float().unsqueeze(1).to(self.device)
+                        ref_loss = self.loss_fn(ref_output, ref_targets)
+                        ref_loss.backward()
+
+                    params = [p for p in self.model.parameters() if p.requires_grad]
+                    torch.nn.utils.clip_grad_norm(params, 10)
                     self.optimizer.step()
 
                 loss = loss.item()

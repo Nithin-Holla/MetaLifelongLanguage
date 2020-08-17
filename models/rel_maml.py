@@ -13,13 +13,13 @@ from transformers import AdamW
 
 import datasets.utils
 import models.utils
-from models.base_models import ReplayMemory, TransformerNeuromodulator, TransformerClsModel
+from models.base_models import ReplayMemory, TransformerClsModel
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('ANML-Log')
+logger = logging.getLogger('MAML-Log')
 
 
-class ANML:
+class MAML:
 
     def __init__(self, device, **kwargs):
         self.inner_lr = kwargs.get('inner_lr')
@@ -29,18 +29,14 @@ class ANML:
         self.replay_every = kwargs.get('replay_every')
         self.device = device
 
-        self.nm = TransformerNeuromodulator(model_name=kwargs.get('model'),
-                                            device=device)
         self.pn = TransformerClsModel(model_name=kwargs.get('model'),
                                       n_classes=1,
                                       max_length=kwargs.get('max_length'),
                                       device=device)
 
-        logger.info('Loaded {} as NM'.format(self.nm.__class__.__name__))
         logger.info('Loaded {} as PN'.format(self.pn.__class__.__name__))
 
-        meta_params = [p for p in self.nm.parameters() if p.requires_grad] + \
-                      [p for p in self.pn.parameters() if p.requires_grad]
+        meta_params = [p for p in self.pn.parameters() if p.requires_grad]
         self.meta_optimizer = AdamW(meta_params, lr=self.meta_lr)
 
         self.memory = ReplayMemory(write_prob=self.write_prob, tuple_size=3)
@@ -62,18 +58,15 @@ class ANML:
         return grouped_data_set
 
     def save_model(self, model_path):
-        checkpoint = {'nm': self.nm.state_dict(),
-                      'pn': self.pn.state_dict()}
+        checkpoint = self.pn.state_dict()
         torch.save(checkpoint, model_path)
 
     def load_model(self, model_path):
         checkpoint = torch.load(model_path)
-        self.nm.load_state_dict(checkpoint['nm'])
-        self.pn.load_state_dict(checkpoint['pn'])
+        self.pn.load_state_dict(checkpoint)
 
     def evaluate(self, dataloader, updates, mini_batch_size):
 
-        self.nm.eval()
         self.pn.train()
 
         support_set = defaultdict(list)
@@ -98,9 +91,7 @@ class ANML:
                                                                                                          candidates)
 
                 input_dict = self.pn.encode_text(list(zip(replicated_text, replicated_relations)))
-                repr = fpn(input_dict, out_from='transformers')
-                modulation = self.nm(input_dict)
-                output = fpn(repr * modulation, out_from='linear')
+                output = fpn(input_dict)
                 targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                 loss = self.loss_fn(output, targets)
 
@@ -123,9 +114,7 @@ class ANML:
                 with torch.no_grad():
 
                     input_dict = self.pn.encode_text(list(zip(replicated_text, replicated_relations)))
-                    repr = fpn(input_dict, out_from='transformers')
-                    modulation = self.nm(input_dict)
-                    output = fpn(repr * modulation, out_from='linear')
+                    output = fpn(input_dict)
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                     loss = self.loss_fn(output, targets)
 
@@ -189,9 +178,7 @@ class ANML:
                                                                                                              candidates)
 
                     input_dict = self.pn.encode_text(list(zip(replicated_text, replicated_relations)))
-                    repr = fpn(input_dict, out_from='transformers')
-                    modulation = self.nm(input_dict)
-                    output = fpn(repr * modulation, out_from='linear')
+                    output = fpn(input_dict)
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                     loss = self.loss_fn(output, targets)
 
@@ -231,9 +218,7 @@ class ANML:
                                                                                                              candidates)
 
                     input_dict = self.pn.encode_text(list(zip(replicated_text, replicated_relations)))
-                    repr = fpn(input_dict, out_from='transformers')
-                    modulation = self.nm(input_dict)
-                    output = fpn(repr * modulation, out_from='linear')
+                    output = fpn(input_dict)
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                     loss = self.loss_fn(output, targets)
 
@@ -242,15 +227,6 @@ class ANML:
 
                     acc = models.utils.calculate_accuracy(pred.tolist(), true_labels.tolist())
                     query_acc.append(acc)
-
-                    # NM meta gradients
-                    nm_params = [p for p in self.nm.parameters() if p.requires_grad]
-                    meta_nm_grads = torch.autograd.grad(loss, nm_params, retain_graph=True)
-                    for param, meta_grad in zip(nm_params, meta_nm_grads):
-                        if param.grad is not None:
-                            param.grad += meta_grad.detach()
-                        else:
-                            param.grad = meta_grad.detach()
 
                     # PN meta gradients
                     pn_params = [p for p in fpn.parameters() if p.requires_grad]
@@ -263,9 +239,8 @@ class ANML:
                             param.grad = meta_grad.detach()
 
                 # Meta optimizer step
-                # nm_params = [p for p in self.nm.parameters() if p.requires_grad]
                 # pn_params = [p for p in self.pn.parameters() if p.requires_grad]
-                # for param in nm_params + pn_params:
+                # for param in pn_params:
                 #     param.grad /= len(query_set)
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()

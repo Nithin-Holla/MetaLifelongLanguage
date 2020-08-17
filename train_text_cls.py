@@ -12,6 +12,7 @@ import datasets.utils
 from models.cls_agem import AGEM
 from models.cls_anml import ANML
 from models.cls_baseline import Baseline
+from models.cls_maml import MAML
 from models.cls_oml import OML
 from models.cls_replay import Replay
 from models.plastic_network import PlasticNetwork
@@ -47,6 +48,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_length', type=int, help='Maximum sequence length for the input', default=128)
     parser.add_argument('--seed', type=int, help='Random seed', default=42)
     parser.add_argument('--replay_rate', type=float, help='Replay rate from memory', default=0.01)
+    parser.add_argument('--replay_every', type=int, help='Number of data points between replay', default=9600)
     args = parser.parse_args()
     logger.info('Using configuration: {}'.format(vars(args)))
 
@@ -80,6 +82,8 @@ if __name__ == '__main__':
         learner = AGEM(device=device, n_classes=n_classes, **vars(args))
     elif args.learner == 'replay':
         learner = Replay(device=device, n_classes=n_classes, **vars(args))
+    elif args.learner == 'maml':
+        learner = MAML(device=device, n_classes=n_classes, **vars(args))
     elif args.learner == 'oml':
         learner = OML(device=device, n_classes=n_classes, **vars(args))
     elif args.learner == 'anml':
