@@ -1,6 +1,5 @@
 import logging
 import math
-from collections import defaultdict
 
 import higher
 import torch
@@ -46,17 +45,6 @@ class OML:
         inner_params = [p for p in self.pln.parameters() if p.requires_grad]
         self.inner_optimizer = optim.SGD(inner_params, lr=self.inner_lr)
 
-    def group_by_class(self, data_set, mini_batch_size):
-        grouped_text = defaultdict(list)
-        grouped_data_set = []
-        for txt, lbl in zip(data_set['text'], data_set['label']):
-            grouped_text[lbl].append(txt)
-        for lbl in grouped_text.keys():
-            for i in range(0, len(grouped_text[lbl]), mini_batch_size):
-                subset = grouped_text[lbl][i: i + mini_batch_size]
-                grouped_data_set.append((subset, [lbl] * len(subset)))
-        return grouped_data_set
-
     def save_model(self, model_path):
         checkpoint = {'rln': self.rln.state_dict(),
                       'pln': self.pln.state_dict()}
@@ -72,13 +60,10 @@ class OML:
         self.rln.eval()
         self.pln.train()
 
-        support_set = defaultdict(list)
+        support_set = []
         for _ in range(updates):
             text, labels = self.memory.read_batch(batch_size=mini_batch_size)
-            support_set['text'].extend(text)
-            support_set['label'].extend(labels)
-
-        support_set = self.group_by_class(support_set, mini_batch_size)
+            support_set.append((text, labels))
 
         with higher.innerloop_ctx(self.pln, self.inner_optimizer,
                                   copy_initial_weights=False,
@@ -154,18 +139,15 @@ class OML:
                                       track_higher_grads=False) as (fpln, diffopt):
 
                 # Inner loop
-                support_set = defaultdict(list)
+                support_set = []
                 task_predictions, task_labels = [], []
                 for _ in range(updates):
                     try:
                         text, labels = next(train_dataloader)
-                        support_set['text'].extend(text)
-                        support_set['label'].extend(labels)
+                        support_set.append((text, labels))
                     except StopIteration:
                         logger.info('Terminating training as all the data is seen')
                         return
-
-                support_set = self.group_by_class(support_set, mini_batch_size)
 
                 for text, labels in support_set:
                     labels = torch.tensor(labels).to(self.device)
