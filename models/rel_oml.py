@@ -1,6 +1,5 @@
 import logging
 import math
-from collections import defaultdict
 
 import higher
 import torch
@@ -46,18 +45,6 @@ class OML:
         inner_params = [p for p in self.pln.parameters() if p.requires_grad]
         self.inner_optimizer = optim.SGD(inner_params, lr=self.inner_lr)
 
-    def group_by_relation(self, data_set, mini_batch_size):
-        grouped_text = defaultdict(list)
-        grouped_data_set = []
-        for txt, lbl, cand in zip(data_set['text'], data_set['label'], data_set['candidates']):
-            key = ' '.join(lbl)
-            grouped_text[key].append((txt, lbl, cand))
-        for key in grouped_text.keys():
-            for i in range(0, len(grouped_text[key]), mini_batch_size):
-                subset = grouped_text[key][i: i + mini_batch_size]
-                grouped_data_set.append(list(zip(*subset)))
-        return grouped_data_set
-
     def save_model(self, model_path):
         checkpoint = {'rln': self.rln.state_dict(),
                       'pln': self.pln.state_dict()}
@@ -73,14 +60,10 @@ class OML:
         self.rln.eval()
         self.pln.train()
 
-        support_set = defaultdict(list)
+        support_set = []
         for _ in range(updates):
             text, label, candidates = self.memory.read_batch(batch_size=mini_batch_size)
-            support_set['text'].extend(text)
-            support_set['label'].extend(label)
-            support_set['candidates'].extend(candidates)
-
-        support_set = self.group_by_relation(support_set, mini_batch_size)
+            support_set.append((text, label, candidates))
 
         with higher.innerloop_ctx(self.pln, self.inner_optimizer,
                                   copy_initial_weights=False,
@@ -164,19 +147,15 @@ class OML:
                                       track_higher_grads=False) as (fpln, diffopt):
 
                 # Inner loop
-                support_set = defaultdict(list)
+                support_set = []
                 task_predictions, task_labels = [], []
                 for _ in range(updates):
                     try:
                         text, label, candidates = next(train_dataloader)
-                        support_set['text'].extend(text)
-                        support_set['label'].extend(label)
-                        support_set['candidates'].extend(candidates)
+                        support_set.append((text, label, candidates))
                     except StopIteration:
                         logger.info('Terminating training as all the data is seen')
                         return
-
-                support_set = self.group_by_relation(support_set, mini_batch_size)
 
                 for text, label, candidates in support_set:
                     replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text,
