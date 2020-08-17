@@ -66,7 +66,7 @@ class TransformerRLN(nn.Module):
 
     def encode_text(self, text):
         encode_result = self.tokenizer.batch_encode_plus(text, return_token_type_ids=False, max_length=self.max_length,
-                                                         pad_to_max_length=True, return_tensors='pt')
+                                                         truncation=True, padding='max_length', return_tensors='pt')
         for key in encode_result:
             encode_result[key] = encode_result[key].to(self.device)
         return encode_result
@@ -156,7 +156,7 @@ class PlasticTransformerClsModel(nn.Module):
 
     def encode_text(self, text):
         encode_result = self.tokenizer.batch_encode_plus(text, return_token_type_ids=False, max_length=self.max_length,
-                                                         pad_to_max_length=True, return_tensors='pt')
+                                                         truncation=True, padding='max_length', return_tensors='pt')
         for key in encode_result:
             encode_result[key] = encode_result[key].to(self.device)
         return encode_result
