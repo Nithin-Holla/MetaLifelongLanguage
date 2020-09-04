@@ -187,6 +187,7 @@ class MAML:
                     try:
                         text, label, candidates = next(train_dataloader)
                         query_set.append((text, label, candidates))
+                        self.memory.write_batch(text, label, candidates)
                     except StopIteration:
                         logger.info('Terminating training as all the data is seen')
                         return
@@ -218,9 +219,6 @@ class MAML:
                             param.grad = meta_grad.detach()
 
                 # Meta optimizer step
-                # pn_params = [p for p in self.pn.parameters() if p.requires_grad]
-                # for param in pn_params:
-                #     param.grad /= len(query_set)
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()
 

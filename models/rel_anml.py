@@ -200,6 +200,7 @@ class ANML:
                     try:
                         text, label, candidates = next(train_dataloader)
                         query_set.append((text, label, candidates))
+                        self.memory.write_batch(text, label, candidates)
                     except StopIteration:
                         logger.info('Terminating training as all the data is seen')
                         return
@@ -242,10 +243,6 @@ class ANML:
                             param.grad = meta_grad.detach()
 
                 # Meta optimizer step
-                # nm_params = [p for p in self.nm.parameters() if p.requires_grad]
-                # pn_params = [p for p in self.pn.parameters() if p.requires_grad]
-                # for param in nm_params + pn_params:
-                #     param.grad /= len(query_set)
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()
 

@@ -194,6 +194,7 @@ class OML:
                     try:
                         text, label, candidates = next(train_dataloader)
                         query_set.append((text, label, candidates))
+                        self.memory.write_batch(text, label, candidates)
                     except StopIteration:
                         logger.info('Terminating training as all the data is seen')
                         return
@@ -235,10 +236,6 @@ class OML:
                             param.grad = meta_grad.detach()
 
                 # Meta optimizer step
-                # rln_params = [p for p in self.rln.parameters() if p.requires_grad]
-                # pln_params = [p for p in self.pln.parameters() if p.requires_grad]
-                # for param in rln_params + pln_params:
-                #     param.grad /= len(query_set)
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()
 
