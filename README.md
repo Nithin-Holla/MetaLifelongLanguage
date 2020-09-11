@@ -1,5 +1,7 @@
 # MetaLifelongLanguage
 
+This is the official code for the paper [Meta-Learning with Sparse Experience Replay for Lifelong Language Learning](https://arxiv.org/abs/2009.04891).
+
 ## Getting started
 
 - Clone the repository: `git clone git@github.com:Nithin-Holla/MetaLifelongLanguage.git`.
@@ -129,4 +131,16 @@ optional arguments:
                         Number of clusters to take
   --replay_every REPLAY_EVERY
                         Number of data points between replay
+```
+
+## Citation
+
+If you use this code repository, please consider citing the paper:
+```bib
+@article{holla2020lifelong,
+  title={Meta-Learning with Sparse Experience Replay for Lifelong Language Learning},
+  author={Holla, Nithin and Mishra, Pushkar and Yannakoudakis, Helen and Shutova, Ekaterina},
+  journal={arXiv preprint arXiv:2009.04891},
+  year={2020}
+}
 ```
