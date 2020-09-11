@@ -9,9 +9,9 @@ def calculate_metrics(predictions, labels, binary=False):
     labels = np.array(labels)
     unique_labels = np.unique(labels)
     accuracy = metrics.accuracy_score(labels, predictions)
-    precision = metrics.precision_score(labels, predictions, average=averaging, labels=unique_labels)
-    recall = metrics.recall_score(labels, predictions, average=averaging, labels=unique_labels)
-    f1_score = metrics.f1_score(labels, predictions, average=averaging, labels=unique_labels)
+    precision = metrics.precision_score(labels, predictions, average=averaging, labels=unique_labels, zero_division=0)
+    recall = metrics.recall_score(labels, predictions, average=averaging, labels=unique_labels, zero_division=0)
+    f1_score = metrics.f1_score(labels, predictions, average=averaging, labels=unique_labels, zero_division=0)
     return accuracy, precision, recall, f1_score
 
 
