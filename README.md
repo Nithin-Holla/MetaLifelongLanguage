@@ -15,9 +15,11 @@ This is the official code for the paper [Meta-Learning with Sparse Experience Re
 - Download the five datasets for text classification from [here](https://tinyurl.com/y89zdadp) and unzip them in this directory.
 - Make a new directory for lifelong relation extraction: `mkdir LifelongFewRel`.
 - Download the files using these commands:
-    - `wget https://raw.githubusercontent.com/hongwang600/Lifelong_Relation_Detection/master/data/relation_name.txt`
-    - `wget https://raw.githubusercontent.com/hongwang600/Lifelong_Relation_Detection/master/data/training_data.txt`
-    - `wget https://raw.githubusercontent.com/hongwang600/Lifelong_Relation_Detection/master/data/val_data.txt`
+    ```bash
+    wget https://raw.githubusercontent.com/hongwang600/Lifelong_Relation_Detection/master/data/relation_name.txt
+    wget https://raw.githubusercontent.com/hongwang600/Lifelong_Relation_Detection/master/data/training_data.txt
+    wget https://raw.githubusercontent.com/hongwang600/Lifelong_Relation_Detection/master/data/val_data.txt
+    ```
 - Navigate back: `cd ../..`.
 - The directory tree should like this:
 <pre>
