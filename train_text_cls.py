@@ -43,7 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--mini_batch_size', type=int, help='Batch size of data points within an episode', default=16)
     parser.add_argument('--updates', type=int, help='Number of inner-loop updates', default=5)
     parser.add_argument('--write_prob', type=float, help='Write probability for buffer memory', default=1.0)
-    parser.add_argument('--max_length', type=int, help='Maximum sequence length for the input', default=128)
+    parser.add_argument('--max_length', type=int, help='Maximum sequence length for the input', default=448)
     parser.add_argument('--seed', type=int, help='Random seed', default=42)
     parser.add_argument('--replay_rate', type=float, help='Replay rate from memory', default=0.01)
     parser.add_argument('--replay_every', type=int, help='Number of data points between replay', default=9600)
