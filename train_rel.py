@@ -26,13 +26,12 @@ if __name__ == '__main__':
 
     # Parse command line arguments
     parser = ArgumentParser()
-    parser.add_argument('--n_epochs', type=int, help='Number of epochs (only for baseline)', default=1)
-    parser.add_argument('--lr', type=float, help='Learning rate (only for baseline)', default=3e-5)
+    parser.add_argument('--n_epochs', type=int, help='Number of epochs (only for MTL)', default=1)
+    parser.add_argument('--lr', type=float, help='Learning rate (only for the baselines)', default=3e-5)
     parser.add_argument('--inner_lr', type=float, help='Inner-loop learning rate', default=0.001)
     parser.add_argument('--meta_lr', type=float, help='Meta learning rate', default=3e-5)
     parser.add_argument('--model', type=str, help='Name of the model', default='bert')
     parser.add_argument('--learner', type=str, help='Learner method', default='sequential')
-    parser.add_argument('--n_episodes', type=int, help='Number of meta-training episodes', default=10000)
     parser.add_argument('--mini_batch_size', type=int, help='Batch size of data points within an episode', default=4)
     parser.add_argument('--updates', type=int, help='Number of inner-loop updates', default=5)
     parser.add_argument('--write_prob', type=float, help='Write probability for buffer memory', default=1.0)
