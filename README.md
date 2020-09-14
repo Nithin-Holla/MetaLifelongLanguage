@@ -21,7 +21,7 @@ This is the official code for the paper [Meta-Learning with Sparse Experience Re
     wget https://raw.githubusercontent.com/hongwang600/Lifelong_Relation_Detection/master/data/val_data.txt
     ```
 - Navigate back: `cd ../..`.
-- The directory tree should like this:
+- The directory tree should look like this:
 <pre>
 .
 ├── MetaLifelongLanguage
@@ -63,7 +63,6 @@ This is the official code for the paper [Meta-Learning with Sparse Experience Re
 python train_text_cls.py [-h] --order ORDER [--n_epochs N_EPOCHS] [--lr LR]
                          [--inner_lr INNER_LR] [--meta_lr META_LR]
                          [--model MODEL] [--learner LEARNER]
-                         [--n_episodes N_EPISODES]
                          [--mini_batch_size MINI_BATCH_SIZE]
                          [--updates UPDATES] [--write_prob WRITE_PROB]
                          [--max_length MAX_LENGTH] [--seed SEED]
@@ -73,8 +72,8 @@ python train_text_cls.py [-h] --order ORDER [--n_epochs N_EPOCHS] [--lr LR]
 optional arguments:
   -h, --help            show this help message and exit
   --order ORDER         Order of datasets
-  --n_epochs N_EPOCHS   Number of epochs (only for baseline)
-  --lr LR               Learning rate (only for baseline)
+  --n_epochs N_EPOCHS   Number of epochs (only for MTL)
+  --lr LR               Learning rate (only for the baselines)
   --inner_lr INNER_LR   Inner-loop learning rate
   --meta_lr META_LR     Meta learning rate
   --model MODEL         Name of the model
@@ -101,7 +100,6 @@ optional arguments:
 ```
 python train_rel.py [-h] [--n_epochs N_EPOCHS] [--lr LR] [--inner_lr INNER_LR]
                     [--meta_lr META_LR] [--model MODEL] [--learner LEARNER]
-                    [--n_episodes N_EPISODES]
                     [--mini_batch_size MINI_BATCH_SIZE] [--updates UPDATES]
                     [--write_prob WRITE_PROB] [--max_length MAX_LENGTH]
                     [--seed SEED] [--replay_rate REPLAY_RATE] [--order ORDER]
@@ -110,8 +108,8 @@ python train_rel.py [-h] [--n_epochs N_EPOCHS] [--lr LR] [--inner_lr INNER_LR]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --n_epochs N_EPOCHS   Number of epochs (only for baseline)
-  --lr LR               Learning rate (only for baseline)
+  --n_epochs N_EPOCHS   Number of epochs (only for MTL)
+  --lr LR               Learning rate (only for the baselines)
   --inner_lr INNER_LR   Inner-loop learning rate
   --meta_lr META_LR     Meta learning rate
   --model MODEL         Name of the model

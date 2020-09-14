@@ -112,7 +112,6 @@ class ANML:
         return acc, prec, rec, f1
 
     def training(self, train_datasets, **kwargs):
-        n_episodes = kwargs.get('n_episodes')
         updates = kwargs.get('updates')
         mini_batch_size = kwargs.get('mini_batch_size')
 
@@ -130,7 +129,8 @@ class ANML:
         train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=mini_batch_size, shuffle=False,
                                                 collate_fn=datasets.utils.batch_encode))
 
-        for episode_id in range(n_episodes):
+        episode_id = 0
+        while True:
 
             self.inner_optimizer.zero_grad()
             support_loss, support_acc, support_prec, support_rec, support_f1 = [], [], [], [], []
@@ -166,8 +166,8 @@ class ANML:
 
                 acc, prec, rec, f1 = models.utils.calculate_metrics(task_predictions, task_labels)
 
-                logger.info('Episode {}/{} support set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
-                            'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
+                logger.info('Episode {} support set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
+                            'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1,
                                                                         np.mean(support_loss), acc, prec, rec, f1))
 
                 # Outer loop
@@ -226,11 +226,13 @@ class ANML:
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()
 
-                logger.info('Episode {}/{} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
-                            'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1, n_episodes,
+                logger.info('Episode {} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '
+                            'recall = {:.4f}, F1 score = {:.4f}'.format(episode_id + 1,
                                                                         np.mean(query_loss), np.mean(query_acc),
                                                                         np.mean(query_prec), np.mean(query_rec),
                                                                         np.mean(query_f1)))
+
+                episode_id += 1
 
     def testing(self, test_datasets, **kwargs):
         updates = kwargs.get('updates')

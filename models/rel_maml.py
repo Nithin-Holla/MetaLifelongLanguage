@@ -113,7 +113,6 @@ class MAML:
         return acc
 
     def training(self, train_datasets, **kwargs):
-        n_episodes = kwargs.get('n_episodes')
         updates = kwargs.get('updates')
         mini_batch_size = kwargs.get('mini_batch_size')
 
@@ -131,7 +130,8 @@ class MAML:
         train_dataloader = iter(data.DataLoader(concat_dataset, batch_size=mini_batch_size, shuffle=False,
                                                 collate_fn=datasets.utils.rel_encode))
 
-        for episode_id in range(n_episodes):
+        episode_id = 0
+        while True:
 
             self.inner_optimizer.zero_grad()
             support_loss, support_acc = [], []
@@ -170,10 +170,9 @@ class MAML:
 
                 acc = models.utils.calculate_accuracy(task_predictions, task_labels)
 
-                logger.info('Episode {}/{} support set: Loss = {:.4f}, accuracy = {:.4f}'.format(episode_id + 1,
-                                                                                                 n_episodes,
-                                                                                                 np.mean(support_loss),
-                                                                                                 acc))
+                logger.info('Episode {} support set: Loss = {:.4f}, accuracy = {:.4f}'.format(episode_id + 1,
+                                                                                              np.mean(support_loss),
+                                                                                              acc))
 
                 # Outer loop
                 query_loss, query_acc = [], []
@@ -222,10 +221,11 @@ class MAML:
                 self.meta_optimizer.step()
                 self.meta_optimizer.zero_grad()
 
-                logger.info('Episode {}/{} query set: Loss = {:.4f}, accuracy = {:.4f}'.format(episode_id + 1,
-                                                                                               n_episodes,
-                                                                                               np.mean(query_loss),
-                                                                                               np.mean(query_acc)))
+                logger.info('Episode {} query set: Loss = {:.4f}, accuracy = {:.4f}'.format(episode_id + 1,
+                                                                                            np.mean(query_loss),
+                                                                                            np.mean(query_acc)))
+
+                episode_id += 1
 
     def testing(self, test_dataset, **kwargs):
         updates = kwargs.get('updates')
