@@ -192,7 +192,7 @@ class ElmoClsModel(nn.Module):
         if out_from == 'full':
             elmo_text = self.text_elmo(text)['elmo_representations'][0]
             elmo_relations = self.relation_elmo(relations)['elmo_representations'][0]
-            out = self.cos(out)
+            out = self.cos(elmo_text, elmo_relations)
         # elif out_from == 'transformers':
         #     _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
         # elif out_from == 'linear':
