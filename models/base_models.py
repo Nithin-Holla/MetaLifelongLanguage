@@ -192,11 +192,14 @@ class ElmoClsModel(nn.Module):
         if out_from == 'full':
             elmo_text = self.text_elmo(text)['elmo_representations'][0]
             elmo_relations = self.relation_elmo(relations)['elmo_representations'][0]
+            elmo_text = torch.mean(elmo_text, dim=1)
+            elmo_relations = torch.mean(elmo_relations, dim=1)
             out = self.cos(elmo_text, elmo_relations)
+            out = out.unsqueeze(1)
         # elif out_from == 'transformers':
         #     _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
         # elif out_from == 'linear':
         #     out = self.linear(inputs)
         # else:
-            raise ValueError('Invalid value of argument')
+            # raise ValueError('Invalid value of argument')
         return out
