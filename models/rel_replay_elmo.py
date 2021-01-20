@@ -55,7 +55,7 @@ class Replay:
                 replicated_text, replicated_relations, ranking_label = datasets.utils.replicate_rel_data(text, label,
                                                                                                          candidates)
 
-                input_dict = self.model.encode_text(list(zip(replicated_text, replicated_relations)))
+                input_dict = self.model.encode_text(list((replicated_text, replicated_relations)))
                 output = self.model(input_dict)
                 targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                 loss = self.loss_fn(output, targets)
@@ -72,7 +72,7 @@ class Replay:
                     for _ in range(replay_steps):
                         ref_text, ref_label, ref_candidates = self.memory.read_batch(batch_size=mini_batch_size)
                         replicated_ref_text, replicated_ref_relations, ref_ranking_label = datasets.utils.replicate_rel_data(ref_text, ref_label, ref_candidates)
-                        ref_input_dict = self.model.encode_text(list(zip(replicated_ref_text, replicated_ref_relations)))
+                        ref_input_dict = self.model.encode_text(list((replicated_ref_text, replicated_ref_relations)))
                         ref_output = self.model(ref_input_dict)
                         ref_targets = torch.tensor(ref_ranking_label).float().unsqueeze(1).to(self.device)
                         ref_loss = self.loss_fn(ref_output, ref_targets)
@@ -106,7 +106,7 @@ class Replay:
                                                                                                      candidates)
 
             with torch.no_grad():
-                input_dict = self.model.encode_text(list(zip(replicated_text, replicated_relations)))
+                input_dict = self.model.encode_text(list((replicated_text, replicated_relations)))
                 output = self.model(input_dict)
 
             pred, true_labels = models.utils.make_rel_prediction(output, ranking_label)
@@ -133,4 +133,3 @@ class Replay:
         acc = self.evaluate(dataloader=test_dataloader)
         logger.info('Overall test metrics: Accuracy = {:.4f}'.format(acc))
         return acc
- 
