@@ -17,6 +17,7 @@ from models.rel_baseline import Baseline
 from models.rel_maml import MAML
 from models.rel_oml import OML
 from models.rel_replay_elmo import Replay
+from models.cls_agem import logger
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('ContinualLearningLog')
@@ -73,6 +74,7 @@ if __name__ == '__main__':
 
     # Set the device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    logger.info('Using device: {}'.format(device))
 
     # Generate clusters
     relation_index = datasets.utils.get_relation_index(train_data)
