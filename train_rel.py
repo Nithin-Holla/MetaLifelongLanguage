@@ -16,7 +16,7 @@ from models.rel_anml import ANML
 from models.rel_baseline import Baseline
 from models.rel_maml import MAML
 from models.rel_oml import OML
-from models.rel_replay import Replay
+from models.rel_replay_elmo import Replay
 
 logging.basicConfig(level='INFO', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('ContinualLearningLog')
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     # Set base path
     base_path = os.path.dirname(os.path.abspath(__file__))
-    
+
     # Load training and validation data
     logger.info('Loading the dataset')
     data_dir = os.path.join(base_path, '../data/LifelongFewRel')
