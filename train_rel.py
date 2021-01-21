@@ -13,7 +13,7 @@ import datasets.utils
 from datasets.lifelong_fewrel_dataset import LifelongFewRelDataset
 from models.rel_agem import AGEM
 from models.rel_anml import ANML
-from models.rel_baseline import Baseline
+from models.rel_baseline_elmo import Baseline
 from models.rel_maml import MAML
 from models.rel_oml import OML
 from models.rel_replay_elmo import Replay
