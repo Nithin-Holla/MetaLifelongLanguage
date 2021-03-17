@@ -4,8 +4,8 @@ import pandas as pd
 
 from torch.utils import data
 
-MAX_TRAIN_SIZE = 115000
-MAX_TEST_SIZE = 7600
+MAX_TRAIN_SIZE = 1000#115000
+MAX_TEST_SIZE = 66#7600
 
 
 def preprocess(text):
