@@ -5,10 +5,10 @@ import re
 import torch
 import numpy as np
 from sklearn.cluster import KMeans
+from torch.utils.data import random_split
 
 from datasets.lifelong_fewrel_dataset import LifelongFewRelDataset
-from datasets.text_classification_dataset import AGNewsDataset, AmazonDataset, YelpDataset, DBPediaDataset, \
-    YahooAnswersDataset
+from datasets.text_classification_dataset import AGNewsDataset, AmazonDataset, DBPediaDataset, MAX_TRAIN_SIZE, MAX_VAL_SIZE, YelpDataset, YahooAnswersDataset
 
 
 def batch_encode(batch):
@@ -33,30 +33,42 @@ def get_dataset(base_path, dataset_id):
         train_path = os.path.join(base_path, '../data/ag_news_csv/train.csv')
         test_path = os.path.join(base_path, '../data/ag_news_csv/test.csv')
         train_dataset = AGNewsDataset(train_path, 'train', reduce=True)
+        train_dataset, val_dataset = get_train_val_split(train_dataset, MAX_TRAIN_SIZE, MAX_VAL_SIZE)
         test_dataset = AGNewsDataset(test_path, 'test', reduce=True)
     elif dataset_id == 1:
         train_path = os.path.join(base_path, '../data/amazon_review_full_csv/train.csv')
         test_path = os.path.join(base_path, '../data/amazon_review_full_csv/test.csv')
         train_dataset = AmazonDataset(train_path, 'train', reduce=True)
+        train_dataset, val_dataset = get_train_val_split(train_dataset, MAX_TRAIN_SIZE, MAX_VAL_SIZE)
         test_dataset = AmazonDataset(test_path, 'test', reduce=True)
     elif dataset_id == 2:
         train_path = os.path.join(base_path, '../data/yelp_review_full_csv/train.csv')
         test_path = os.path.join(base_path, '../data/yelp_review_full_csv/test.csv')
         train_dataset = YelpDataset(train_path, 'train', reduce=True)
+        train_dataset, val_dataset = get_train_val_split(train_dataset, MAX_TRAIN_SIZE, MAX_VAL_SIZE)
         test_dataset = YelpDataset(test_path, 'test', reduce=True)
     elif dataset_id == 3:
         train_path = os.path.join(base_path, '../data/dbpedia_csv/train.csv')
         test_path = os.path.join(base_path, '../data/dbpedia_csv/test.csv')
         train_dataset = DBPediaDataset(train_path, 'train', reduce=True)
+        train_dataset, val_dataset = get_train_val_split(train_dataset, MAX_TRAIN_SIZE, MAX_VAL_SIZE)
         test_dataset = DBPediaDataset(test_path, 'test', reduce=True)
     elif dataset_id == 4:
         train_path = os.path.join(base_path, '../data/yahoo_answers_csv/train.csv')
+        train_dataset, val_dataset = get_train_val_split(train_dataset, MAX_TRAIN_SIZE, MAX_VAL_SIZE)
         test_path = os.path.join(base_path, '../data/yahoo_answers_csv/test.csv')
         train_dataset = YahooAnswersDataset(train_path, 'train', reduce=True)
         test_dataset = YahooAnswersDataset(test_path, 'test', reduce=True)
     else:
         raise Exception('Invalid dataset ID')
-    return train_dataset, test_dataset
+    return train_dataset, val_dataset, test_dataset
+
+
+def get_train_val_split(dataset, train_size, val_size):
+    train_dataset, val_dataset = random_split(dataset,
+                                              [train_size, val_size],
+                                              generator=torch.Generator().manual_seed(42))
+    return train_dataset, val_dataset
 
 
 def offset_labels(dataset):
