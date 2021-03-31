@@ -80,7 +80,10 @@ def offset_labels(dataset):
         offset_by = 5 + 4
     elif isinstance(dataset, YahooAnswersDataset):
         offset_by = 5 + 4 + 14
-    dataset.data['labels'] = dataset.data['labels'] + offset_by
+    try:
+        dataset.data['labels'] = dataset.data['labels'] + offset_by
+    except AttributeError:
+        dataset.dataset.data['labels'] = dataset.dataset.data['labels'] + offset_by
     return dataset
 
 
