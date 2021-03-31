@@ -68,7 +68,7 @@ def get_train_val_split(dataset, train_size, val_size):
     train_dataset, val_dataset = random_split(dataset,
                                               [train_size, val_size],
                                               generator=torch.Generator().manual_seed(42))
-    return train_dataset, val_dataset
+    return train_dataset.dataset, val_dataset.dataset
 
 
 def offset_labels(dataset):
@@ -80,10 +80,7 @@ def offset_labels(dataset):
         offset_by = 5 + 4
     elif isinstance(dataset, YahooAnswersDataset):
         offset_by = 5 + 4 + 14
-    try:
-        dataset.data['labels'] = dataset.data['labels'] + offset_by
-    except AttributeError:
-        dataset.dataset.data['labels'] = dataset.dataset.data['labels'] + offset_by
+    dataset.data['labels'] = dataset.data['labels'] + offset_by
     return dataset
 
 
