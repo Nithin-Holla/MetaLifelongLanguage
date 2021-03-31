@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     # Load the datasets
     logger.info('Loading the datasets')
-    train_datasets, val_datasets, test_datasets = [], []
+    train_datasets, val_datasets, test_datasets = [], [], []
     for dataset_id in dataset_order_mapping[args.order]:
         train_dataset, val_dataset, test_dataset = datasets.utils.get_dataset(base_path, dataset_id)
         logger.info('Loaded {}'.format(train_dataset.__class__.__name__))
