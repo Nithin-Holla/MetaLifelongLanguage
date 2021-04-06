@@ -28,7 +28,7 @@ class ANML:
         self.replay_every = kwargs.get('replay_every')
         self.device = device
 
-        self.nm = TransformerNeuromodulator(model_name=kwargs.get('model'),
+        self.nm = TransformerNeuromodulator(n_classes, model_name=kwargs.get('model'),
                                             device=device)
         self.pn = TransformerClsModel(model_name=kwargs.get('model'),
                                       n_classes=n_classes,
@@ -153,9 +153,12 @@ class ANML:
                 for text, labels in support_set:
                     labels = torch.tensor(labels).to(self.device)
                     input_dict = self.pn.encode_text(text)
-                    repr = fpn(input_dict, out_from='transformers')
+
                     modulation = self.nm(input_dict)
-                    output = fpn(repr * modulation, out_from='linear')
+
+                    output = fpn(input_dict,  modulation, out_from='full')
+
+
                     loss = self.loss_fn(output, labels)
                     diffopt.step(loss)
                     pred = models.utils.make_prediction(output.detach())
@@ -190,9 +193,12 @@ class ANML:
                 for text, labels in query_set:
                     labels = torch.tensor(labels).to(self.device)
                     input_dict = self.pn.encode_text(text)
-                    repr = fpn(input_dict, out_from='transformers')
+                    # repr = fpn(input_dict, out_from='transformers')
+
                     modulation = self.nm(input_dict)
-                    output = fpn(repr * modulation, out_from='linear')
+                    output = fpn(input_dict, modulation, out_from='full')
+
+                    # output = fpn(repr * modulation, out_from='linear')
                     loss = self.loss_fn(output, labels)
                     query_loss.append(loss.item())
                     pred = models.utils.make_prediction(output.detach())
@@ -224,6 +230,7 @@ class ANML:
 
                 # Meta optimizer step
                 self.meta_optimizer.step()
+                self.pn.hebbian.reset_trace()
                 self.meta_optimizer.zero_grad()
 
                 logger.info('Episode {} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '

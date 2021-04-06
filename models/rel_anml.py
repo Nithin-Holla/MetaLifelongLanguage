@@ -170,6 +170,7 @@ class ANML:
                     input_dict = self.pn.encode_text(list(zip(replicated_text, replicated_relations)))
                     repr = fpn(input_dict, out_from='transformers')
                     modulation = self.nm(input_dict)
+                    # Todo copy params into Hebbian layer
                     output = fpn(repr * modulation, out_from='linear')
                     targets = torch.tensor(ranking_label).float().unsqueeze(1).to(self.device)
                     loss = self.loss_fn(output, targets)

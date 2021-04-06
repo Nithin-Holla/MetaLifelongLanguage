@@ -150,10 +150,16 @@ class OML:
                         return
 
                 for text, labels in support_set:
+                    # zero trace
                     labels = torch.tensor(labels).to(self.device)
                     input_dict = self.rln.encode_text(text)
                     repr = self.rln(input_dict)
                     output = fpln(repr)
+
+                    for numstep in range(params['nbsteps']):
+                        y, hebb = net(Variable(inputs[numstep], requires_grad=False),
+                                      Variable(labels[numstep], requires_grad=False), hebb)
+
                     loss = self.loss_fn(output, labels)
                     diffopt.step(loss)
                     pred = models.utils.make_prediction(output.detach())

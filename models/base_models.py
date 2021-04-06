@@ -5,10 +5,44 @@ from collections import defaultdict
 import torch
 
 from torch import nn
-from torch.nn import init
+from torch.autograd import Variable
+from torch.nn import init, Parameter
 from torch.nn import functional as F
 from transformers import AlbertModel, AlbertTokenizer, BertTokenizer, BertModel
 
+
+class Plastic(nn.Module):
+    '''Hebbian layer with plastic weights (alpha) as input'''
+
+    def __init__(self, in_features, out_features, activation=F.tanh):
+        super(Plastic, self).__init__()
+
+        self.activation = activation
+
+        # Regular weights
+        self.w = Parameter(.01 * torch.randn(in_features, out_features), requires_grad=True)
+
+        # Just a bias term
+        self.b = Parameter(.01 * torch.randn(1),requires_grad=True)
+        # The weight decay term - "learning rate" of plasticity - trainable, but shared across all connections
+        self.eta = Parameter(.01 * torch.ones(1), requires_grad=True)
+        # Initialize hebbian trace
+        self.trace = Variable(torch.zeros(in_features, out_features))
+
+    def forward(self, x, alpha):
+        output = torch.zeros(x.shape[0], self.w.shape[-1])
+
+
+        for i, (x_in, alpha_in) in enumerate(zip(x, alpha)):
+            x_in = x_in.reshape(1, -1)
+            x_out = self.activation(x_in.mm(self.w + torch.mul(alpha_in.reshape(self.w.shape), self.trace)) + self.b)
+            self.trace = (1 - self.eta)*self.trace + self.eta*torch.bmm(x_in.unsqueeze(2), x_out.unsqueeze(1))[0]
+            self.trace = torch.clamp(self.trace, -1, 1)
+            output[i] = x_out
+        return output
+
+    def reset_trace(self):
+        self.trace = Variable(torch.zeros(self.w.shape))
 
 class TransformerClsModel(nn.Module):
 
@@ -25,7 +59,9 @@ class TransformerClsModel(nn.Module):
             self.encoder = BertModel.from_pretrained('bert-base-uncased')
         else:
             raise NotImplementedError
-        self.linear = nn.Linear(768, n_classes)
+        # self.linear = nn.Linear(768, n_classes)
+        self.hebbian = Plastic(768, n_classes)
+
         self.to(self.device)
 
     def encode_text(self, text):
@@ -35,14 +71,14 @@ class TransformerClsModel(nn.Module):
             encode_result[key] = encode_result[key].to(self.device)
         return encode_result
 
-    def forward(self, inputs, out_from='full'):
+    def forward(self, inputs, modulation, out_from='full'):
         if out_from == 'full':
             _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
-            out = self.linear(out)
+            out = self.hebbian(out, modulation)
         elif out_from == 'transformers':
             _, out = self.encoder(inputs['input_ids'], attention_mask=inputs['attention_mask'])
         elif out_from == 'linear':
-            out = self.linear(inputs)
+            out = self.hebbian(inputs, modulation)
         else:
             raise ValueError('Invalid value of argument')
         return out
@@ -90,9 +126,10 @@ class LinearPLN(nn.Module):
 
 class TransformerNeuromodulator(nn.Module):
 
-    def __init__(self, model_name, device):
+    def __init__(self, n_classes, model_name, device):
         super(TransformerNeuromodulator, self).__init__()
         self.device = device
+        self.n_classes = n_classes
         if model_name == 'albert':
             self.encoder = AlbertModel.from_pretrained('albert-base-v2')
         elif model_name == 'bert':
@@ -102,7 +139,7 @@ class TransformerNeuromodulator(nn.Module):
         self.encoder.requires_grad = False
         self.linear = nn.Sequential(nn.Linear(768, 768),
                                     nn.ReLU(),
-                                    nn.Linear(768, 768),
+                                    nn.Linear(768, 768*n_classes),
                                     nn.Sigmoid())
         self.to(self.device)
 
