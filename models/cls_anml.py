@@ -142,7 +142,7 @@ class ANML:
                 # Inner loop
                 support_set = []
                 task_predictions, task_labels = [], []
-                for _ in range(updates):
+                for _ in range(1):
                     try:
                         text, labels = next(train_dataloader)
                         support_set.append((text, labels))
@@ -157,6 +157,7 @@ class ANML:
                     modulation = self.nm(input_dict)
 
                     output = fpn(input_dict,  modulation, out_from='full')
+
 
 
                     loss = self.loss_fn(output, labels)
@@ -190,7 +191,10 @@ class ANML:
                         logger.info('Terminating training as all the data is seen')
                         return
 
+
                 for text, labels in query_set:
+
+
                     labels = torch.tensor(labels).to(self.device)
                     input_dict = self.pn.encode_text(text)
                     # repr = fpn(input_dict, out_from='transformers')
@@ -230,7 +234,7 @@ class ANML:
 
                 # Meta optimizer step
                 self.meta_optimizer.step()
-                self.pn.hebbian.reset_trace()
+
                 self.meta_optimizer.zero_grad()
 
                 logger.info('Episode {} query set: Loss = {:.4f}, accuracy = {:.4f}, precision = {:.4f}, '

@@ -14,7 +14,7 @@ from transformers import AlbertModel, AlbertTokenizer, BertTokenizer, BertModel
 class Plastic(nn.Module):
     '''Hebbian layer with plastic weights (alpha) as input'''
 
-    def __init__(self, in_features, out_features, activation=F.tanh):
+    def __init__(self, in_features, out_features, activation=F.softmax):
         super(Plastic, self).__init__()
 
         self.activation = activation
@@ -30,6 +30,7 @@ class Plastic(nn.Module):
         self.trace = Variable(torch.zeros(in_features, out_features))
 
     def forward(self, x, alpha):
+        self.reset_trace()
         output = torch.zeros(x.shape[0], self.w.shape[-1])
 
 
