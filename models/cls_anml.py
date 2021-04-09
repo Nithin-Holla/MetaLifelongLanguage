@@ -74,9 +74,8 @@ class ANML:
             for text, labels in support_set:
                 labels = torch.tensor(labels).to(self.device)
                 input_dict = self.pn.encode_text(text)
-                repr = fpn(input_dict, out_from='transformers')
                 modulation = self.nm(input_dict)
-                output = fpn(repr * modulation, out_from='linear')
+                output = fpn(input_dict, modulation, out_from='full')
                 loss = self.loss_fn(output, labels)
                 diffopt.step(loss)
                 pred = models.utils.make_prediction(output.detach())
@@ -142,7 +141,7 @@ class ANML:
                 # Inner loop
                 support_set = []
                 task_predictions, task_labels = [], []
-                for _ in range(1):
+                for _ in range(updates):
                     try:
                         text, labels = next(train_dataloader)
                         support_set.append((text, labels))
