@@ -16,3 +16,4 @@ logs/
 saved_models/
 runs/
 .vector_cache/
+.vscode/

@@ -5,10 +5,10 @@ import re
 import torch
 import numpy as np
 from sklearn.cluster import KMeans
+from torch.utils.data import random_split
 
 from datasets.lifelong_fewrel_dataset import LifelongFewRelDataset
-from datasets.text_classification_dataset import AGNewsDataset, AmazonDataset, YelpDataset, DBPediaDataset, \
-    YahooAnswersDataset
+from datasets.text_classification_dataset import AGNewsDataset, AmazonDataset, DBPediaDataset, MAX_TRAIN_SIZE, MAX_VAL_SIZE, YelpDataset, YahooAnswersDataset
 
 
 def batch_encode(batch):
@@ -57,6 +57,13 @@ def get_dataset(base_path, dataset_id):
     else:
         raise Exception('Invalid dataset ID')
     return train_dataset, test_dataset
+
+
+def get_train_val_split(dataset, train_size, val_size):
+    train_dataset, val_dataset = random_split(dataset,
+                                              [train_size, val_size],
+                                              generator=torch.Generator().manual_seed(42))
+    return train_dataset, val_dataset
 
 
 def offset_labels(dataset):

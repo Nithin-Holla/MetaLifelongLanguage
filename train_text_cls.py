@@ -1,3 +1,4 @@
+from datasets.text_classification_dataset import MAX_TRAIN_SIZE, MAX_VAL_SIZE
 import logging
 import os
 import random
@@ -60,13 +61,17 @@ if __name__ == '__main__':
 
     # Load the datasets
     logger.info('Loading the datasets')
-    train_datasets, test_datasets = [], []
+    train_datasets, val_datasets, test_datasets = [], [], []
     for dataset_id in dataset_order_mapping[args.order]:
         train_dataset, test_dataset = datasets.utils.get_dataset(base_path, dataset_id)
         logger.info('Loaded {}'.format(train_dataset.__class__.__name__))
         train_dataset = datasets.utils.offset_labels(train_dataset)
         test_dataset = datasets.utils.offset_labels(test_dataset)
+        train_dataset, val_dataset = datasets.utils.get_train_val_split(dataset=train_dataset,
+                                                                        train_size=MAX_TRAIN_SIZE,
+                                                                        val_size=MAX_VAL_SIZE)
         train_datasets.append(train_dataset)
+        val_datasets.append(val_dataset)
         test_datasets.append(test_dataset)
     logger.info('Finished loading all the datasets')
 
@@ -100,5 +105,9 @@ if __name__ == '__main__':
     logger.info('Saved the model with name {}'.format(model_file_name))
 
     # Testing
-    logger.info('----------Testing starts here----------')
+    logger.info('----------Testing on val set starts here----------')
+    learner.testing(test_datasets, **vars(args))
+
+    # Testing
+    logger.info('----------Testing on test set starts here----------')
     learner.testing(test_datasets, **vars(args))

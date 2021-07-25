@@ -5,6 +5,7 @@ import pandas as pd
 from torch.utils import data
 
 MAX_TRAIN_SIZE = 115000
+MAX_VAL_SIZE = 5000
 MAX_TEST_SIZE = 7600
 
 
@@ -44,7 +45,7 @@ class AGNewsDataset(data.Dataset):
         self.n_classes = 4
         if reduce:
             if split == 'train':
-                self.data = self.data.sample(n=MAX_TRAIN_SIZE, random_state=42)
+                self.data = self.data.sample(n=MAX_TRAIN_SIZE+MAX_VAL_SIZE, random_state=42)
             else:
                 self.data = self.data.sample(n=MAX_TEST_SIZE, random_state=42)
 
@@ -70,7 +71,7 @@ class DBPediaDataset(data.Dataset):
         self.n_classes = 14
         if reduce:
             if split == 'train':
-                self.data = self.data.sample(n=MAX_TRAIN_SIZE, random_state=42)
+                self.data = self.data.sample(n=MAX_TRAIN_SIZE+MAX_VAL_SIZE, random_state=42)
             else:
                 self.data = self.data.sample(n=MAX_TEST_SIZE, random_state=42)
 
@@ -96,7 +97,7 @@ class AmazonDataset(data.Dataset):
         self.n_classes = 5
         if reduce:
             if split == 'train':
-                self.data = self.data.sample(n=MAX_TRAIN_SIZE, random_state=42)
+                self.data = self.data.sample(n=MAX_TRAIN_SIZE+MAX_VAL_SIZE, random_state=42)
             else:
                 self.data = self.data.sample(n=MAX_TEST_SIZE, random_state=42)
 
@@ -120,7 +121,7 @@ class YelpDataset(data.Dataset):
         self.n_classes = 5
         if reduce:
             if split == 'train':
-                self.data = self.data.sample(n=MAX_TRAIN_SIZE, random_state=42)
+                self.data = self.data.sample(n=MAX_TRAIN_SIZE+MAX_VAL_SIZE, random_state=42)
             else:
                 self.data = self.data.sample(n=MAX_TEST_SIZE, random_state=42)
 
@@ -147,7 +148,7 @@ class YahooAnswersDataset(data.Dataset):
         self.n_classes = 10
         if reduce:
             if split == 'train':
-                self.data = self.data.sample(n=MAX_TRAIN_SIZE, random_state=42)
+                self.data = self.data.sample(n=MAX_TRAIN_SIZE+MAX_VAL_SIZE, random_state=42)
             else:
                 self.data = self.data.sample(n=MAX_TEST_SIZE, random_state=42)
 
